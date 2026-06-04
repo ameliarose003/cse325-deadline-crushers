@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "2i69jnVF8H4=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\amiha\\Documents\\2026\\Spring26\\git-projects-sp26\\cse-325\\Momentum\\cse325-deadline-crushers\\Momentum\\Momentum.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\amiha\\.nuget\\packages\\microsoft.aspnetcore.app.internal.assets\\10.0.7\\microsoft.aspnetcore.app.internal.assets.10.0.7.nupkg.sha512"
+  ],
+  "logs": []
+}
