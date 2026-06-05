@@ -26,6 +26,26 @@ build_property.EnableCodeStyleSeverity =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBcHAucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/amiha/Documents/2026/Spring26/git-projects-sp26/cse-325/Momentum/cse325-deadline-crushers/Momentum/Components/Pages/Account/Login/Dashboard.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xBY2NvdW50XExvZ2luXERhc2hib2FyZC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/amiha/Documents/2026/Spring26/git-projects-sp26/cse-325/Momentum/cse325-deadline-crushers/Momentum/Components/Pages/Account/Login/Form.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xBY2NvdW50XExvZ2luXEZvcm0ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/amiha/Documents/2026/Spring26/git-projects-sp26/cse-325/Momentum/cse325-deadline-crushers/Momentum/Components/Pages/Account/Registration/Edit.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xBY2NvdW50XFJlZ2lzdHJhdGlvblxFZGl0LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/amiha/Documents/2026/Spring26/git-projects-sp26/cse-325/Momentum/cse325-deadline-crushers/Momentum/Components/Pages/Account/Registration/Form.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xBY2NvdW50XFJlZ2lzdHJhdGlvblxGb3JtLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/amiha/Documents/2026/Spring26/git-projects-sp26/cse-325/Momentum/cse325-deadline-crushers/Momentum/Components/Pages/Account/Registration/List.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xBY2NvdW50XFJlZ2lzdHJhdGlvblxMaXN0LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/amiha/Documents/2026/Spring26/git-projects-sp26/cse-325/Momentum/cse325-deadline-crushers/Momentum/Components/Pages/Counter.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xDb3VudGVyLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
