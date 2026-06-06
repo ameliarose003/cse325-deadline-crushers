@@ -1,18 +1,270 @@
-﻿@page "/"
+@page "/"
+@rendermode InteractiveServer
 
-<PageTitle>Momentum</PageTitle>
+<PageTitle>Momentum - Dashboard</PageTitle>
 
-<h1>Start Tracking Your Habits!</h1>
+<div class="dashboard-container">
+    @* Greeting Header *@
+    <header class="dashboard-header">
+        <div class="welcome-msg">
+            <h1>Good @TimeOfDayGreeting, John!</h1>
+            <p>Ready to maintain your momentum and crush your goals today?</p>
+        </div>
+        <div class="date-badge">
+            📅 @TodayDateFormatted
+        </div>
+    </header>
 
+    @if (habits.Count > 0)
+    {
+        @* Overview Stat Cards *@
+        <section class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-label">Current Streak</span>
+                    <div class="stat-icon icon-streak">🔥</div>
+                </div>
+                <div>
+                    <div class="stat-value">@CurrentStreak Days</div>
+                    <div class="stat-desc">Personal Record: 12 Days</div>
+                </div>
+            </div>
 
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-label">Daily Progress</span>
+                    <div class="stat-icon icon-completion">✅</div>
+                </div>
+                <div>
+                    <div class="stat-value">@CompletionRate%</div>
+                    <div class="stat-desc">@CompletedCount of @habits.Count completed today</div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" style="width: @CompletionRate%"></div>
+                    </div>
+                </div>
+            </div>
 
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-label">Active Habits</span>
+                    <div class="stat-icon icon-habits">📋</div>
+                </div>
+                <div>
+                    <div class="stat-value">@habits.Count</div>
+                    <div class="stat-desc">Strengthening your daily routines</div>
+                </div>
+            </div>
+        </section>
 
+        @* Main Dashboard Grid *@
+        <div class="dashboard-content-grid">
+            @* Left Column: Daily Habits Quick-View *@
+            <section class="dashboard-panel">
+                <h2 class="panel-title">
+                    <span>⚡ Daily Habits Quick-View</span>
+                </h2>
+                <div class="habit-list-container">
+                    @foreach (var habit in habits)
+                    {
+                        <div class="habit-item @(habit.IsCompleted ? "completed" : "")" @onclick="() => ToggleHabit(habit)">
+                            <div class="habit-checkbox">
+                                <svg class="habit-checkbox-icon" viewBox="0 0 24 24">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                            <div class="habit-details">
+                                <span class="habit-name">@habit.Name</span>
+                                <div class="habit-meta">
+                                    <span class="badge-tag @habit.Category">@habit.CategoryLabel</span>
+                                    <span class="habit-streak-badge">🔥 @habit.Streak d</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </section>
 
+            @* Right Column: Streak Highlights Panel *@
+            <aside class="dashboard-panel">
+                <h2 class="panel-title">
+                    <span>📅 Streak Highlights</span>
+                </h2>
+                
+                @* Weekly Calendar Strip *@
+                <div class="weekly-calendar-grid">
+                    @foreach (var day in weekDays)
+                    {
+                        <div class="calendar-day-col">
+                            <span class="calendar-day-lbl">@day.Abbreviation</span>
+                            <div class="calendar-day-circle @(day.IsCompleted ? "completed" : "") @(day.IsToday ? "today" : "")" 
+                                 title="@day.Name @(day.IsToday ? "(Today)" : "")">
+                                @(day.IsCompleted ? "✓" : day.Name[0])
+                            </div>
+                        </div>
+                    }
+                </div>
 
+                @* Recent Achievements *@
+                <div class="achievements-section">
+                    <h3 class="panel-title" style="font-size: 1rem; margin-bottom: 1rem;">🏆 Recent Achievements</h3>
+                    <div class="achievements-list">
+                        <div class="achievement-item">
+                            <span class="achievement-icon">⚡</span>
+                            <div class="achievement-info">
+                                <span class="achievement-title">Consistent Starter</span>
+                                <span class="achievement-desc">Completed at least 3 habits in a single day.</span>
+                            </div>
+                        </div>
+                        <div class="achievement-item" style="border-left-color: #f97316;">
+                            <span class="achievement-icon">🔥</span>
+                            <div class="achievement-info">
+                                <span class="achievement-title">5-Day Heat</span>
+                                <span class="achievement-desc">Maintained a 5-day habit streak.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    }
+    else
+    {
+        @* Empty State Illustration *@
+        <section class="empty-state-card">
+            <svg class="empty-state-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="100" cy="100" r="80" fill="#e0e7ff" opacity="0.4" />
+                <circle cx="100" cy="100" r="60" fill="#e0e7ff" />
+                <rect x="75" y="65" width="50" height="70" rx="6" fill="white" stroke="#6366f1" stroke-width="4" />
+                <line x1="87" y1="85" x2="113" y2="85" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" />
+                <line x1="87" y1="100" x2="113" y2="100" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" />
+                <line x1="87" y1="115" x2="103" y2="115" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" />
+                <circle cx="100" cy="135" r="22" fill="#818cf8" />
+                <path d="M93 135L98 140L108 130" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <h3>No habits tracked today</h3>
+            <p>You haven't set up any habits to track yet. Start building your daily momentum by creating a habit!</p>
+            <button class="btn-primary-dashboard" @onclick="LoadMockHabits">
+                Create a Habit
+            </button>
+        </section>
+    }
 
-@*TO-DO Design Dashboard Layout *@
-@* To-Do Daily habits Quick-view *@
-@* To-Do Streak Highlights *@
-@* To-Do Empty State Illustration *@
-@* To-Do Fetch Overview Data *@
-@* To-Do Route Guard Verification *@
+    @* Controls for Developer testing / Reviewing *@
+    <footer class="dev-controls">
+        <span>🔧 Review Controls (Simulation)</span>
+        <div class="dev-buttons">
+            <button class="btn-dev" @onclick="LoadMockHabits">Populate Dashboard</button>
+            <button class="btn-dev" @onclick="ClearAllHabits">Empty State View</button>
+        </div>
+    </footer>
+</div>
+
+@code {
+    // Models
+    private class Habit
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public bool IsCompleted { get; set; }
+        public int Streak { get; set; }
+        public string Category { get; set; } = string.Empty; // CSS style class
+        public string CategoryLabel { get; set; } = string.Empty;
+    }
+
+    private class WeekDay
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Abbreviation { get; set; } = string.Empty;
+        public bool IsCompleted { get; set; }
+        public bool IsToday { get; set; }
+    }
+
+    // Dynamic Header values
+    private string TimeOfDayGreeting => DateTime.Now.Hour < 12 ? "morning" : (DateTime.Now.Hour < 18 ? "afternoon" : "evening");
+    private string TodayDateFormatted => DateTime.Now.ToString("dddd, MMMM d, yyyy");
+
+    // Lists representing state
+    private List<Habit> habits = new();
+    private List<WeekDay> weekDays = new();
+
+    // Stats calculations
+    private int CompletedCount => habits.Count(h => h.IsCompleted);
+    private int CompletionRate => habits.Count == 0 ? 0 : (CompletedCount * 100) / habits.Count;
+    private int CurrentStreak => CompletedCount > 0 ? 5 : 4; // Mock logic updating based on interactions
+
+    protected override void OnInitialized()
+    {
+        // Load initial data (Simulating "Fetch Overview Data" and "Route Guard Verification")
+        LoadMockHabits();
+        InitializeCalendar();
+    }
+
+    private void ToggleHabit(Habit habit)
+    {
+        habit.IsCompleted = !habit.IsCompleted;
+        if (habit.IsCompleted)
+        {
+            habit.Streak++;
+        }
+        else
+        {
+            habit.Streak--;
+        }
+
+        UpdateCalendarState();
+    }
+
+    private void LoadMockHabits()
+    {
+        habits = new List<Habit>
+        {
+            new() { Id = 1, Name = "Read 10 pages of a book", IsCompleted = true, Streak = 5, Category = "mind", CategoryLabel = "Mind" },
+            new() { Id = 2, Name = "Drink 3 liters of water", IsCompleted = false, Streak = 2, Category = "health", CategoryLabel = "Health" },
+            new() { Id = 3, Name = "30-minute cardio workout", IsCompleted = true, Streak = 9, Category = "fitness", CategoryLabel = "Fitness" },
+            new() { Id = 4, Name = "Code on side project", IsCompleted = false, Streak = 4, Category = "work", CategoryLabel = "Work" },
+            new() { Id = 5, Name = "10-minute mindfulness meditation", IsCompleted = true, Streak = 1, Category = "mind", CategoryLabel = "Mind" }
+        };
+        UpdateCalendarState();
+    }
+
+    private void ClearAllHabits()
+    {
+        habits.Clear();
+        UpdateCalendarState();
+    }
+
+    private void InitializeCalendar()
+    {
+        var daysOfWeek = new[]
+        {
+            new { Name = "Monday", Abbr = "M" },
+            new { Name = "Tuesday", Abbr = "T" },
+            new { Name = "Wednesday", Abbr = "W" },
+            new { Name = "Thursday", Abbr = "T" },
+            new { Name = "Friday", Abbr = "F" },
+            new { Name = "Saturday", Abbr = "S" },
+            new { Name = "Sunday", Abbr = "S" }
+        };
+
+        var todayName = DateTime.Now.DayOfWeek.ToString();
+
+        weekDays = daysOfWeek.Select(d => new WeekDay
+        {
+            Name = d.Name,
+            Abbreviation = d.Abbr,
+            IsCompleted = d.Name == "Monday" || d.Name == "Wednesday", // pre-mock historical completions
+            IsToday = d.Name == todayName
+        }).ToList();
+    }
+
+    private void UpdateCalendarState()
+    {
+        // Update today's calendar status based on whether at least one habit is completed
+        var todayName = DateTime.Now.DayOfWeek.ToString();
+        var today = weekDays.FirstOrDefault(d => d.Name == todayName);
+        if (today != null)
+        {
+            today.IsCompleted = CompletedCount > 0;
+        }
+    }
+}
