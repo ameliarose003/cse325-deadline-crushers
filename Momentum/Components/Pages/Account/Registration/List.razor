@@ -1,5 +1,42 @@
 @page "/users-list"
+@rendermode InteractiveServer
+@using Momentum.Services
+@inject IAuthService AuthService
 
 <PageTitle>Momentum - Users List</PageTitle>
 
-<h1>Users List</h1>
+<div class="users-list-container">
+    <h1>Registered Users</h1>
+
+    <div class="users-grid">
+        @if (emails.Count == 0)
+        {
+            <p style="color: #64748b; font-style: italic;">No users registered yet.</p>
+        }
+        else
+        {
+            @foreach (var email in emails)
+            {
+                <div class="user-row">
+                    <div class="user-avatar-placeholder">
+                        @email[0].ToString().ToUpper()
+                    </div>
+                    <div class="user-email">
+                        @email
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <a href="/" class="back-dashboard-link">← Back to Dashboard</a>
+</div>
+
+@code {
+    private List<string> emails = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        emails = await AuthService.GetRegisteredUsersAsync();
+    }
+}

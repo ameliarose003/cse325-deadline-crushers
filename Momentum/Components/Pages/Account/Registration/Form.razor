@@ -1,5 +1,78 @@
 @page "/register"
+@rendermode InteractiveServer
+@using Momentum.Services
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
 
 <PageTitle>Momentum - Register</PageTitle>
 
-<h1>Register to start tracking your habits!</h1>
+<div class="register-page-container">
+    <h1>Create Account</h1>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert-danger">@errorMessage</div>
+    }
+
+    <form @onsubmit="HandleSubmit" class="register-form" @onsubmit:preventDefault>
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" @bind="email" placeholder="Enter your email" required />
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" @bind="password" placeholder="Create a password (min 8 chars)" required minlength="8" />
+        </div>
+        <div class="form-group">
+            <label for="confirmPassword">Confirm Password</label>
+            <input type="password" id="confirmPassword" @bind="confirmPassword" placeholder="Confirm your password" required minlength="8" />
+        </div>
+        <button type="submit" class="btn-register">Register</button>
+    </form>
+
+    <a href="/login" class="login-link">Already have an account? Sign In</a>
+</div>
+
+@code {
+    private string email = string.Empty;
+    private string password = string.Empty;
+    private string confirmPassword = string.Empty;
+    private string? errorMessage;
+
+    private async Task HandleSubmit()
+    {
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(confirmPassword))
+        {
+            errorMessage = "Please fill in all fields.";
+            return;
+        }
+
+        if (password.Length < 8)
+        {
+            errorMessage = "Password must be at least 8 characters.";
+            return;
+        }
+
+        if (password != confirmPassword)
+        {
+            errorMessage = "Passwords do not match.";
+            return;
+        }
+
+        if (!email.Contains("@"))
+        {
+            errorMessage = "Please enter a valid email address.";
+            return;
+        }
+
+        var success = await AuthService.RegisterUserAsync(email, password);
+        if (success)
+        {
+            NavigationManager.NavigateTo("/login?registered=true");
+        }
+        else
+        {
+            errorMessage = "Email is already registered.";
+        }
+    }
+}

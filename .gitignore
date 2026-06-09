@@ -1,0 +1,30 @@
+# Build and release folders
+bin/
+obj/
+
+# User-specific files
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio / VS Code caches and settings
+.vs/
+.vscode/
+.history/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.suo
+*.suo
+*.suo
+*.suo
+*.suo
+*.suo
+*.suo
+*.suo
+
+# Operating System Files
+.DS_Store
+Thumbs.db
