@@ -1,5 +1,5 @@
 @page "/register"
-@rendermode InteractiveServer
+@rendermode @(new Microsoft.AspNetCore.Components.Web.InteractiveServerRenderMode(prerender: false))
 @using Momentum.Services
 @inject IAuthService AuthService
 @inject NavigationManager NavigationManager
@@ -15,6 +15,14 @@
     }
 
     <form @onsubmit="HandleSubmit" class="register-form" @onsubmit:preventDefault>
+        <div class="form-group">
+            <label for="firstName">First Name</label>
+            <input type="text" id="firstName" @bind="firstName" placeholder="Enter your first name" required />
+        </div>
+        <div class="form-group">
+            <label for="lastName">Last Name</label>
+            <input type="text" id="lastName" @bind="lastName" placeholder="Enter your last name" required />
+        </div>
         <div class="form-group">
             <label for="email">Email</label>
             <input type="email" id="email" @bind="email" placeholder="Enter your email" required />
@@ -34,6 +42,8 @@
 </div>
 
 @code {
+    private string firstName = string.Empty;
+    private string lastName = string.Empty;
     private string email = string.Empty;
     private string password = string.Empty;
     private string confirmPassword = string.Empty;
@@ -41,7 +51,7 @@
 
     private async Task HandleSubmit()
     {
-        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(confirmPassword))
+        if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(confirmPassword))
         {
             errorMessage = "Please fill in all fields.";
             return;
@@ -65,7 +75,7 @@
             return;
         }
 
-        var success = await AuthService.RegisterUserAsync(email, password);
+        var success = await AuthService.RegisterUserAsync(email, password, firstName, lastName);
         if (success)
         {
             NavigationManager.NavigateTo("/login?registered=true");

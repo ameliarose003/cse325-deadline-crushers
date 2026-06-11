@@ -1,5 +1,5 @@
 @page "/login"
-@rendermode InteractiveServer
+@rendermode @(new Microsoft.AspNetCore.Components.Web.InteractiveServerRenderMode(prerender: false))
 @using Momentum.Services
 @inject IAuthService AuthService
 @inject NavigationManager NavigationManager
