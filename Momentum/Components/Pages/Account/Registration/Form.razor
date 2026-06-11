@@ -1,5 +1,6 @@
 @page "/register"
 @rendermode InteractiveServer
+@using Momentum.Components.Shared
 @using Momentum.Services
 @inject IAuthService AuthService
 @inject NavigationManager NavigationManager
@@ -21,7 +22,9 @@
         </div>
         <div class="form-group">
             <label for="password">Password</label>
-            <input type="password" id="password" @bind="password" placeholder="Create a password (min 8 chars)" required minlength="8" />
+            <input type="password" id="password" @bind="password" @bind:event="oninput" placeholder="Create a password (min 8 chars)" required minlength="8" />
+
+            <PasswordStrengthIndicator Password="@password" />
         </div>
         <div class="form-group">
             <label for="confirmPassword">Confirm Password</label>
