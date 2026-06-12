@@ -1,19 +1,21 @@
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
+using Momentum.Data;
 using Momentum.Models;
 
 namespace Momentum.Services;
 
 public class AuthService : IAuthService
 {
+    private readonly MomentumDbContext _dbContext;
     private string? _currentUserEmail;
-    private readonly List<User> _users = new();
     private readonly object _lock = new();
 
-    public AuthService()
+    public AuthService(MomentumDbContext dbContext)
     {
-        // Pre-populate a default user for testing purposes
-        RegisterUser("john@example.com", "password123");
+        _dbContext = dbContext;
+        InitializeDefaultUser();
     }
 
     public Task<bool> IsAuthenticatedAsync()
@@ -24,26 +26,26 @@ public class AuthService : IAuthService
         }
     }
 
-    public Task<bool> LoginAsync(string email, string password)
+    public async Task<bool> LoginAsync(string email, string password)
     {
-        lock (_lock)
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
         {
-            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
-            {
-                return Task.FromResult(false);
-            }
+            return false;
+        }
 
-            var hash = HashPassword(password);
-            var user = _users.FirstOrDefault(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
-            
-            if (user != null && user.PasswordHash == hash)
+        var hash = HashPassword(password);
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email.ToUpper() == email.ToUpper());
+
+        if (user != null && user.PasswordHash == hash)
+        {
+            lock (_lock)
             {
                 _currentUserEmail = email;
-                return Task.FromResult(true);
             }
-
-            return Task.FromResult(false);
+            return true;
         }
+
+        return false;
     }
 
     public Task LogoutAsync()
@@ -63,41 +65,65 @@ public class AuthService : IAuthService
         }
     }
 
-    public Task<bool> RegisterUserAsync(string email, string password)
+    public async Task<string?> GetCurrentUserFirstNameAsync()
     {
+        string? email;
         lock (_lock)
         {
-            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
-            {
-                return Task.FromResult(false);
-            }
+            email = _currentUserEmail;
+        }
 
-            // Check if email already registered
-            var exists = _users.Any(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
-            if (exists)
-            {
-                return Task.FromResult(false);
-            }
+        if (string.IsNullOrEmpty(email))
+        {
+            return null;
+        }
 
-            RegisterUser(email, password);
-            return Task.FromResult(true);
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email.ToUpper() == email.ToUpper());
+        return user?.FirstName;
+    }
+
+    public async Task<bool> RegisterUserAsync(string email, string password, string firstName, string lastName)
+    {
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
+        {
+            return false;
+        }
+
+        // Check if email already registered in database
+        var exists = await _dbContext.Users.AnyAsync(u => u.Email.ToUpper() == email.ToUpper());
+        if (exists)
+        {
+            return false;
+        }
+
+        RegisterUser(email, password, firstName, lastName);
+        await _dbContext.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<List<string>> GetRegisteredUsersAsync()
+    {
+        return await _dbContext.Users.Select(u => u.Email).ToListAsync();
+    }
+
+    private void InitializeDefaultUser()
+    {
+        // Check if any users exist in the database; if not, add default user
+        if (!_dbContext.Users.Any())
+        {
+            RegisterUser("john@example.com", "password123", "John", "Doe");
+            _dbContext.SaveChanges();
         }
     }
 
-    public Task<List<string>> GetRegisteredUsersAsync()
+    private void RegisterUser(string email, string password, string firstName, string lastName)
     {
-        lock (_lock)
-        {
-            return Task.FromResult(_users.Select(u => u.Email).ToList());
-        }
-    }
-
-    private void RegisterUser(string email, string password)
-    {
-        _users.Add(new User
+        _dbContext.Users.Add(new User
         {
             Email = email,
-            PasswordHash = HashPassword(password)
+            PasswordHash = HashPassword(password),
+            FirstName = firstName,
+            LastName = lastName
         });
     }
 
