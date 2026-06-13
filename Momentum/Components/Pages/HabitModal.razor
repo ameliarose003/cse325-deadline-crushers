@@ -1,0 +1,42 @@
+
+
+<button id="openHabitModal" class="trigger-modal-btn" @onclick="OpenModal">Create a new Habit</button>
+
+@if (_isModalOpen) 
+{
+    <div id="customModal" class="modal-overlay">
+        <div class="habit-modal" @onclick:stopPropagation>
+            <button class="close-btn" @onclick="CloseModal">X</button>
+            <EditForm Model="this" OnValidSubmit="HandleSubmit">
+                <div  class="modal-form">
+
+                    <label for="habitTitle">Habit:</label>
+                    <input type="text" name="habit" id="habitTitle" placeholder="ex. Walk a mile" />
+                    <label for="category">Category</label>
+                    <input type="text" name="category" id="category" placeholder="ex. Physical">
+                    <button type="submit">Create Habit</button>
+                </div>
+            </EditForm>
+        </div>
+
+    </div>
+}
+
+@code {
+    private void HandleSubmit() {
+        CloseModal();
+    }
+    private bool _isModalOpen = false;
+
+    private void OpenModal() 
+    {
+        _isModalOpen = true;
+    }
+    private void CloseModal() 
+    {
+        _isModalOpen = false;
+    }
+}
+
+
+
