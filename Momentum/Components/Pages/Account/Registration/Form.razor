@@ -1,5 +1,5 @@
 @page "/register"
-@rendermode InteractiveServer
+@rendermode @(new Microsoft.AspNetCore.Components.Web.InteractiveServerRenderMode(prerender: false))
 @using Momentum.Components.Shared
 @using Momentum.Services
 @inject IAuthService AuthService
@@ -7,36 +7,71 @@
 
 <PageTitle>Momentum - Register</PageTitle>
 
-<div class="register-page-container">
-    <h1>Create Account</h1>
-
-    @if (!string.IsNullOrEmpty(errorMessage))
-    {
-        <div class="alert-danger">@errorMessage</div>
-    }
-
-    <form @onsubmit="HandleSubmit" class="register-form" @onsubmit:preventDefault>
-        <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" @bind="email" placeholder="Enter your email" required />
+<div class="register-page-wrapper">
+    <div class="register-page-container">
+        <div class="register-header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="register-logo"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg>
+            <h1>Create Account</h1>
+            <p>Join us and get started</p>
         </div>
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" @bind="password" @bind:event="oninput" placeholder="Create a password (min 8 chars)" required minlength="8" />
 
-            <PasswordStrengthIndicator Password="@password" />
-        </div>
-        <div class="form-group">
-            <label for="confirmPassword">Confirm Password</label>
-            <input type="password" id="confirmPassword" @bind="confirmPassword" placeholder="Confirm your password" required minlength="8" />
-        </div>
-        <button type="submit" class="btn-register">Register</button>
-    </form>
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert-danger">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                @errorMessage
+            </div>
+        }
 
-    <a href="/login" class="login-link">Already have an account? Sign In</a>
+        <form @onsubmit="HandleSubmit" class="register-form" @onsubmit:preventDefault>
+            <div class="form-row">
+                <div class="form-group half-width">
+                    <div class="input-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <input type="text" id="firstName" @bind="firstName" placeholder="First Name" required />
+                    </div>
+                </div>
+                <div class="form-group half-width">
+                    <div class="input-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <input type="text" id="lastName" @bind="lastName" placeholder="Last Name" required />
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                    <input type="email" id="email" @bind="email" placeholder="Email Address" required />
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    <input type="password" id="password" @bind="password" @bind:event="oninput" placeholder="Create Password" required minlength="8" />
+                </div>
+                <PasswordStrengthIndicator Password="@password" />
+            </div>
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    <input type="password" id="confirmPassword" @bind="confirmPassword" placeholder="Confirm Password" required minlength="8" />
+                </div>
+            </div>
+            <button type="submit" class="btn-register">
+                <span>Create Account</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+        </form>
+
+        <a href="/login" class="login-link">
+            Already have an account? <span>Sign In</span>
+        </a>
+    </div>
 </div>
 
 @code {
+    private string firstName = string.Empty;
+    private string lastName = string.Empty;
     private string email = string.Empty;
     private string password = string.Empty;
     private string confirmPassword = string.Empty;
@@ -44,7 +79,7 @@
 
     private async Task HandleSubmit()
     {
-        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(confirmPassword))
+        if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(confirmPassword))
         {
             errorMessage = "Please fill in all fields.";
             return;
@@ -68,7 +103,7 @@
             return;
         }
 
-        var success = await AuthService.RegisterUserAsync(email, password);
+        var success = await AuthService.RegisterUserAsync(email, password, firstName, lastName);
         if (success)
         {
             NavigationManager.NavigateTo("/login?registered=true");
