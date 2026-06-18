@@ -1,5 +1,6 @@
 using Momentum.Components;
 using Momentum.Services;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,7 +9,10 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddSingleton<IHabitService, HabitService>();
+
 builder.Services.AddSingleton<IAuthService, AuthService>();
+
+builder.Services.AddScoped<ProtectedSessionStorage>();
 
 var app = builder.Build();
 

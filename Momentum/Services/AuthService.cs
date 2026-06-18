@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Momentum.Models;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 
 namespace Momentum.Services;
 
@@ -9,10 +10,13 @@ public class AuthService : IAuthService
     private string? _currentUserEmail;
     private readonly List<User> _users = new();
     private readonly object _lock = new();
+    private readonly ProtectedSessionStorage _sessionStorage;
+    private const string CurrentUserKey = "currentUserEmail";
 
-    public AuthService()
+    public AuthService(ProtectedSessionStorage sessionStorage)
     {
         // Pre-populate a default user for testing purposes
+        _sessionStorage = sessionStorage;
         RegisterUser("john@example.com", "password123");
     }
 
