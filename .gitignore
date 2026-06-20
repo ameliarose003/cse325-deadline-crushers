@@ -28,3 +28,11 @@ obj/
 # Operating System Files
 .DS_Store
 Thumbs.db
+
+# Databases & SQLite local files
+*.db
+*.db-shm
+*.db-wal
+momentum.db
+momentum.db-shm
+momentum.db-wal

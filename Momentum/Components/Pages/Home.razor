@@ -1,5 +1,5 @@
 @page "/"
-@rendermode InteractiveServer
+@rendermode @(new Microsoft.AspNetCore.Components.Web.InteractiveServerRenderMode(prerender: false))
 @using Momentum.Models
 @using Momentum.Services
 @inject IHabitService HabitService
@@ -14,7 +14,7 @@
         @* Greeting Header *@
         <header class="dashboard-header">
             <div class="welcome-msg">
-                <h1>Good @TimeOfDayGreeting, @userEmail!</h1>
+                <h1>Good @TimeOfDayGreeting, @userName!</h1>
                 <p>Ready to maintain your momentum and crush your goals today?</p>
             </div>
             <div style="display: flex; gap: 0.75rem; align-items: center;">
@@ -175,7 +175,7 @@
 @code {
     // Authentication Guard State
     private bool isAuthenticated;
-    private string userEmail = string.Empty;
+    private string userName = string.Empty;
 
     // Dynamic Header values
     private string TimeOfDayGreeting => DateTime.Now.Hour < 12 ? "morning" : (DateTime.Now.Hour < 18 ? "afternoon" : "evening");
@@ -195,8 +195,8 @@
             return;
         }
 
-        var email = await AuthService.GetCurrentUserEmailAsync();
-        userEmail = email ?? "John";
+        var firstName = await AuthService.GetCurrentUserFirstNameAsync();
+        userName = !string.IsNullOrWhiteSpace(firstName) ? firstName : "John";
 
         await LoadDashboardDataAsync();
     }
