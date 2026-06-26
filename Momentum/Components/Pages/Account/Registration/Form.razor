@@ -41,21 +41,43 @@
             <div class="form-group">
                 <div class="input-wrapper">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                    <input type="email" id="email" @bind="email" placeholder="Email Address" required />
+                    <input type="email" id="email" @bind:event="oninput" placeholder="Email Address" required />
                 </div>
+                @if (!string.IsNullOrWhiteSpace(email) && !email.Contains("@"))
+                    {
+                        <p class="validation-error">Please enter a valid email address.</p>
+                    }
             </div>
             <div class="form-group">
                 <div class="input-wrapper">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                    <input type="password" id="password" @bind="password" @bind:event="oninput" placeholder="Create Password" required minlength="8" />
+                    <input type="@(showPassword ? "text" : "password")" id="password" @bind="password" @bind:event="oninput" placeholder="Create Password" required minlength="8" />
+                    <button type="button"
+                            class="password-toggle"
+                            @onclick="TogglePasswordVisibility">
+                        @(showPassword ? "Hide" : "Show")
+                    </button>
                 </div>
                 <PasswordStrengthIndicator Password="@password" />
             </div>
             <div class="form-group">
                 <div class="input-wrapper">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                    <input type="password" id="confirmPassword" @bind="confirmPassword" placeholder="Confirm Password" required minlength="8" />
+                    <input type="@(showConfirmPassword ? "text" : "password")" id="confirmPassword" @bind="confirmPassword" @bind:event="oninput" placeholder="Confirm Password" required minlength="8" />
+                    <button type="button"
+                            class="password-toggle"
+                            @onclick="ToggleConfirmPasswordVisibility">
+                        @(showConfirmPassword ? "Hide" : "Show")
+                    </button>
                 </div>
+                @if (!string.IsNullOrWhiteSpace(confirmPassword) && password != confirmPassword)
+                {
+                    <p class="validation-error">Passwords do not match.</p>
+                }
+                else if (!string.IsNullOrWhiteSpace(confirmPassword) && password == confirmPassword)
+                {
+                    <p class="validation-success">Passwords match.</p>
+                }
             </div>
             <button type="submit" class="btn-register">
                 <span>Create Account</span>
@@ -76,6 +98,8 @@
     private string password = string.Empty;
     private string confirmPassword = string.Empty;
     private string? errorMessage;
+    private bool showPassword = false;
+    private bool showConfirmPassword = false;
 
     private async Task HandleSubmit()
     {
@@ -112,5 +136,15 @@
         {
             errorMessage = "Email is already registered.";
         }
+    }
+
+    private void TogglePasswordVisibility()
+    {
+        showPassword = !showPassword;
+    }
+
+    private void ToggleConfirmPasswordVisibility()
+    {
+        showConfirmPassword = !showConfirmPassword;
     }
 }
