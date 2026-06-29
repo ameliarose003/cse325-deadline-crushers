@@ -1,8 +1,10 @@
 @page "/login"
 @rendermode @(new Microsoft.AspNetCore.Components.Web.InteractiveServerRenderMode(prerender: false))
 @using Momentum.Services
+@using Momentum.Models
 @inject IAuthService AuthService
 @inject NavigationManager NavigationManager
+@inject HttpClient Http
 
 <PageTitle>Momentum - Login</PageTitle>
 
@@ -83,15 +85,31 @@
             return;
         }
 
-        var success = await AuthService.LoginAsync(email, password);
-        if (success)
+        try
         {
-            // Clear any registration parameter from the URL state, and navigate to home
-            NavigationManager.NavigateTo("/");
+            var response = await Http.PostAsJsonAsync("api/login", new LoginRequest { Email = email, Password = password });
+            if (response.IsSuccessStatusCode)
+            {
+                // API validated credentials successfully. Now log in locally to store the session.
+                var success = await AuthService.LoginAsync(email, password);
+                if (success)
+                {
+                    NavigationManager.NavigateTo("/");
+                }
+                else
+                {
+                    errorMessage = "Failed to establish local session.";
+                }
+            }
+            else
+            {
+                var errorData = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                errorMessage = errorData?.ContainsKey("message") == true ? errorData["message"] : "Invalid email or password.";
+            }
         }
-        else
+        catch (Exception ex)
         {
-            errorMessage = "Invalid email or password.";
+            errorMessage = $"An error occurred: {ex.Message}";
         }
     }
 }
