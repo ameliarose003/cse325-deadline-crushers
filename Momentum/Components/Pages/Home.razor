@@ -21,6 +21,12 @@
                 <div class="date-badge">
                     📅 @TodayDateFormatted
                 </div>
+                <button class="btn-dev" @onclick='() => NavigationManager.NavigateTo("/Habits")' style="border-color: #6366f1; color: #4f46e5; border-radius: 9999px; padding: 0.5rem 1rem;">
+                    Habits
+                </button>
+                <button class="btn-dev" @onclick='() => NavigationManager.NavigateTo("/account")' style="border-color: #6366f1; color: #4f46e5; border-radius: 9999px; padding: 0.5rem 1rem;">
+                    Account
+                </button>
                 <button class="btn-dev" @onclick="HandleSignOut" style="border-color: #f87171; color: #ef4444; border-radius: 9999px; padding: 0.5rem 1rem;">
                     Sign Out
                 </button>

@@ -15,15 +15,10 @@ public class AuthService : IAuthService
     private readonly ProtectedSessionStorage _sessionStorage;
     private const string CurrentUserKey = "currentUserEmail";
 
-    public AuthService(ProtectedSessionStorage sessionStorage)
-    {
-        // Pre-populate a default user for testing purposes
-        _sessionStorage = sessionStorage;
-        RegisterUser("john@example.com", "password123");
-    }
-    public dbInitUser(MomentumDbContext dbContext)
+    public AuthService(MomentumDbContext dbContext, ProtectedSessionStorage sessionStorage)
     {
         _dbContext = dbContext;
+        _sessionStorage = sessionStorage;
         InitializeDefaultUser();
     }
 
@@ -113,6 +108,51 @@ public class AuthService : IAuthService
     public async Task<List<string>> GetRegisteredUsersAsync()
     {
         return await _dbContext.Users.Select(u => u.Email).ToListAsync();
+    }
+
+    public async Task<User?> GetCurrentUserAsync()
+    {
+        string? email;
+        lock (_lock)
+        {
+            email = _currentUserEmail;
+        }
+
+        if (string.IsNullOrEmpty(email))
+        {
+            return null;
+        }
+
+        return await _dbContext.Users.FirstOrDefaultAsync(u => u.Email.ToUpper() == email.ToUpper());
+    }
+
+    public async Task<bool> UpdateCurrentUserAsync(string firstName, string lastName, string? newPassword)
+    {
+        var user = await GetCurrentUserAsync();
+        if (user == null)
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
+        {
+            return false;
+        }
+
+        user.FirstName = firstName.Trim();
+        user.LastName = lastName.Trim();
+
+        if (!string.IsNullOrWhiteSpace(newPassword))
+        {
+            if (newPassword.Length < 8)
+            {
+                return false;
+            }
+            user.PasswordHash = HashPassword(newPassword);
+        }
+
+        await _dbContext.SaveChangesAsync();
+        return true;
     }
 
     private void InitializeDefaultUser()
