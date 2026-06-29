@@ -15,6 +15,8 @@ public class AuthService : IAuthService
     private readonly ProtectedSessionStorage _sessionStorage;
     private const string CurrentUserKey = "currentUserEmail";
 
+    public event Action? OnAuthStateChanged;
+
     public AuthService(MomentumDbContext dbContext, ProtectedSessionStorage sessionStorage)
     {
         _dbContext = dbContext;
@@ -74,6 +76,7 @@ public class AuthService : IAuthService
             catch
             {
             }
+            OnAuthStateChanged?.Invoke();
             return true;
         }
 
@@ -93,6 +96,7 @@ public class AuthService : IAuthService
         catch
         {
         }
+        OnAuthStateChanged?.Invoke();
     }
 
     public async Task<string?> GetCurrentUserEmailAsync()

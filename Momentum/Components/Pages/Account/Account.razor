@@ -1,4 +1,5 @@
 @page "/account"
+@attribute [Authorize]
 @rendermode @(new Microsoft.AspNetCore.Components.Web.InteractiveServerRenderMode(prerender: false))
 @using Momentum.Models
 @using Momentum.Services
@@ -6,9 +7,6 @@
 @inject NavigationManager NavigationManager
 
 <PageTitle>Momentum - Account Settings</PageTitle>
-
-@if (isAuthenticated)
-{
     <div class="account-page-wrapper">
         <div class="account-page-container">
             <div class="account-header">
@@ -94,10 +92,8 @@
             </a>
         </div>
     </div>
-}
 
 @code {
-    private bool isAuthenticated;
     private string email = string.Empty;
     private string firstName = string.Empty;
     private string lastName = string.Empty;
@@ -109,13 +105,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        isAuthenticated = await AuthService.IsAuthenticatedAsync();
-        if (!isAuthenticated)
-        {
-            NavigationManager.NavigateTo("/login");
-            return;
-        }
-
         var user = await AuthService.GetCurrentUserAsync();
         if (user != null)
         {
