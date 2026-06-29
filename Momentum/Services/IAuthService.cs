@@ -4,6 +4,8 @@ namespace Momentum.Services;
 
 public interface IAuthService
 {
+    event Action? OnAuthStateChanged;
+
     Task<bool> IsAuthenticatedAsync();
     Task<bool> LoginAsync(string email, string password);
     Task LogoutAsync();
