@@ -1,21 +1,307 @@
 @page "/habits"
 @attribute [Authorize]
+@using Momentum.Models
+@using Momentum.Services
+@using Momentum.Data
+@using Microsoft.EntityFrameworkCore
+@inject MomentumDbContext DbContext
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
 
-<PageTitle>Momentum - Habits</PageTitle>
+<PageTitle>Momentum - Habits History</PageTitle>
 
-<h1>Create Your Habits now!</h1>
+<div class="habits-container">
+    <header class="habits-header">
+        <h1>Habits History</h1>
+        <p>Analyze your consistency and check your historical completions.</p>
+    </header>
 
+    @if (loading)
+    {
+        <div class="history-panel" style="text-align: center; padding: 3rem;">
+            <p style="color: #64748b; font-weight: 600;">Loading your habit history...</p>
+        </div>
+    }
+    else if (currentUser == null)
+    {
+        <div class="history-panel" style="text-align: center; padding: 3rem;">
+            <p style="color: #ef4444; font-weight: 600;">Failed to load user account.</p>
+        </div>
+    }
+    else
+    {
+        @if (showSeedingAlert)
+        {
+            <div class="alert-seed">
+                <span class="alert-seed-icon">ℹ️</span>
+                <div>
+                    <strong>Welcome to Habits!</strong> We have initialized a few default habits to help you get started tracking your progress. Toggle the grid boxes below to log your status.
+                </div>
+            </div>
+        }
 
+        <!-- 1. Heatmap Section -->
+        <section class="history-panel">
+            <h2 class="panel-title">
+                <span>📊 Consistency Heatmap</span>
+            </h2>
+            <div class="heatmap-container">
+                <span class="heatmap-label">Last 28 Days Completion Rate</span>
+                
+                <div class="heatmap-grid">
+                    @foreach (var dayInfo in heatmapDays)
+                    {
+                        <div class="heatmap-day rate-@dayInfo.RateColorIndex"
+                             data-tooltip="@dayInfo.DateFormatted - @dayInfo.CompletedCount of @dayInfo.TotalCount completed (@dayInfo.RatePercent%)">
+                        </div>
+                    }
+                </div>
 
+                <div class="heatmap-legend">
+                    <span>Less</span>
+                    <div class="legend-block rate-0" title="0%"></div>
+                    <div class="legend-block rate-1" title="1-33%"></div>
+                    <div class="legend-block rate-2" title="34-66%"></div>
+                    <div class="legend-block rate-3" title="67-99%"></div>
+                    <div class="legend-block rate-4" title="100%"></div>
+                    <span>More</span>
+                </div>
+            </div>
+        </section>
 
+        <!-- 2. Weekly Matrix Section -->
+        <section class="history-panel">
+            <h2 class="panel-title">
+                <span>📅 7-Day Completion Grid</span>
+            </h2>
 
-@* To-Do Design Log/History Schema *@
-@* To-Do Design Habit schema *@
-@* To-Do Create CRUD endpoints *@
-@* To-Do Create Completion toggle endpoint*@
-@* To-Do Dailt dashboard view *@
-@* To-Do habit creation modal/form *@
-@* To-Do Calendar/grid history view *@
-@* To-Do stread & progress indicators *@
-@* To-Do midnight reset logic *@
-@* To-Do optimistic UI updates *@
+            <div class="matrix-wrapper">
+                <table class="matrix-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left;">Habit</th>
+                            @foreach (var day in weeklyDays)
+                            {
+                                <th>
+                                    <div>@day.Abbr</div>
+                                    <div style="font-size: 0.75rem; font-weight: 500; color: #94a3b8;">@day.Date.ToString("MM/dd")</div>
+                                </th>
+                            }
+                            <th>Streak</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var habit in habits)
+                        {
+                            <tr>
+                                <td class="habit-info-col">
+                                    @habit.Name
+                                    <span class="habit-category-label cat-@habit.Category.ToLower()">
+                                        @habit.CategoryLabel
+                                    </span>
+                                </td>
+                                @foreach (var day in weeklyDays)
+                                {
+                                    var isCompleted = IsHabitCompletedOnDate(habit, day.Date);
+                                    <td class="matrix-cell" @onclick="() => ToggleLogAsync(habit, day.Date)">
+                                        <div class="matrix-checkbox-container">
+                                            <div class="matrix-checkbox @(isCompleted ? "completed" : "")">
+                                                ✓
+                                            </div>
+                                        </div>
+                                    </td>
+                                }
+                                <td class="streak-col">🔥 @habit.Streak d</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+</div>
+
+@code {
+    private bool loading = true;
+    private bool showSeedingAlert = false;
+    private User? currentUser;
+    private List<Habit> habits = new();
+    private List<HeatmapDayInfo> heatmapDays = new();
+    private List<WeeklyDayInfo> weeklyDays = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentUser = await AuthService.GetCurrentUserAsync();
+        if (currentUser == null)
+        {
+            loading = false;
+            return;
+        }
+
+        await LoadDataAsync();
+        loading = false;
+    }
+
+    private async Task LoadDataAsync()
+    {
+        if (currentUser == null) return;
+
+        // Load user habits and logs
+        habits = await DbContext.Habits
+            .Where(h => h.UserId == currentUser.Id)
+            .Include(h => h.Logs)
+            .ToListAsync();
+
+        // Seed default habits if user has none
+        if (habits.Count == 0)
+        {
+            var defaultHabits = new List<Habit>
+            {
+                new() { Name = "Read 10 pages of a book", Category = "mind", CategoryLabel = "Mind", UserId = currentUser.Id },
+                new() { Name = "Drink 3 liters of water", Category = "health", CategoryLabel = "Health", UserId = currentUser.Id },
+                new() { Name = "30-minute cardio workout", Category = "fitness", CategoryLabel = "Fitness", UserId = currentUser.Id },
+                new() { Name = "Code on side project", Category = "work", CategoryLabel = "Work", UserId = currentUser.Id }
+            };
+
+            await DbContext.Habits.AddRangeAsync(defaultHabits);
+            await DbContext.SaveChangesAsync();
+            showSeedingAlert = true;
+
+            // Reload habits
+            habits = await DbContext.Habits
+                .Where(h => h.UserId == currentUser.Id)
+                .Include(h => h.Logs)
+                .ToListAsync();
+        }
+
+        // Initialize lists for grids
+        GenerateWeeklyDays();
+        await GenerateHeatmapDaysAsync();
+    }
+
+    private void GenerateWeeklyDays()
+    {
+        weeklyDays.Clear();
+        var today = DateTime.Today;
+        // Last 7 days ending with today
+        for (int i = 6; i >= 0; i--)
+        {
+            var targetDate = today.AddDays(-i);
+            weeklyDays.Add(new WeeklyDayInfo
+            {
+                Date = DateOnly.FromDateTime(targetDate),
+                Abbr = targetDate.ToString("ddd")
+            });
+        }
+    }
+
+    private async Task GenerateHeatmapDaysAsync()
+    {
+        heatmapDays.Clear();
+        var today = DateTime.Today;
+        
+        // Let's generate data for the last 28 days
+        for (int i = 27; i >= 0; i--)
+        {
+            var targetDate = today.AddDays(-i);
+            var dateOnly = DateOnly.FromDateTime(targetDate);
+            
+            int totalCount = habits.Count;
+            int completedCount = habits.Count(h => h.Logs.Any(l => l.Date == dateOnly && l.IsCompleted));
+            int ratePercent = totalCount == 0 ? 0 : (completedCount * 100) / totalCount;
+            
+            int colorIndex = 0;
+            if (ratePercent == 100) colorIndex = 4;
+            else if (ratePercent >= 67) colorIndex = 3;
+            else if (ratePercent >= 34) colorIndex = 2;
+            else if (ratePercent > 0) colorIndex = 1;
+
+            heatmapDays.Add(new HeatmapDayInfo
+            {
+                Date = dateOnly,
+                DateFormatted = targetDate.ToString("MMMM d, yyyy"),
+                CompletedCount = completedCount,
+                TotalCount = totalCount,
+                RatePercent = ratePercent,
+                RateColorIndex = colorIndex
+            });
+        }
+    }
+
+    private bool IsHabitCompletedOnDate(Habit habit, DateOnly date)
+    {
+        return habit.Logs.Any(l => l.Date == date && l.IsCompleted);
+    }
+
+    private async Task ToggleLogAsync(Habit habit, DateOnly date)
+    {
+        var existingLog = habit.Logs.FirstOrDefault(l => l.Date == date);
+
+        if (existingLog != null)
+        {
+            // Remove log
+            DbContext.HabitLogs.Remove(existingLog);
+            habit.Logs.Remove(existingLog);
+        }
+        else
+        {
+            // Create log
+            var newLog = new HabitLog
+            {
+                HabitId = habit.Id,
+                Date = date,
+                IsCompleted = true
+            };
+            DbContext.HabitLogs.Add(newLog);
+            habit.Logs.Add(newLog);
+        }
+
+        // Recalculate streak
+        habit.Streak = CalculateStreak(habit);
+        
+        // Save database changes
+        await DbContext.SaveChangesAsync();
+
+        // Refresh stats
+        await GenerateHeatmapDaysAsync();
+    }
+
+    private int CalculateStreak(Habit habit)
+    {
+        int streak = 0;
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        
+        bool completedToday = habit.Logs.Any(l => l.Date == today && l.IsCompleted);
+        bool completedYesterday = habit.Logs.Any(l => l.Date == today.AddDays(-1) && l.IsCompleted);
+
+        if (!completedToday && !completedYesterday)
+        {
+            return 0;
+        }
+
+        var checkDate = completedToday ? today : today.AddDays(-1);
+        while (habit.Logs.Any(l => l.Date == checkDate && l.IsCompleted))
+        {
+            streak++;
+            checkDate = checkDate.AddDays(-1);
+        }
+
+        return streak;
+    }
+
+    public class HeatmapDayInfo
+    {
+        public DateOnly Date { get; set; }
+        public string DateFormatted { get; set; } = string.Empty;
+        public int CompletedCount { get; set; }
+        public int TotalCount { get; set; }
+        public int RatePercent { get; set; }
+        public int RateColorIndex { get; set; }
+    }
+
+    public class WeeklyDayInfo
+    {
+        public DateOnly Date { get; set; }
+        public string Abbr { get; set; } = string.Empty;
+    }
+}
