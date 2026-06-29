@@ -22,12 +22,33 @@ public class AuthService : IAuthService
         InitializeDefaultUser();
     }
 
-    public Task<bool> IsAuthenticatedAsync()
+    private async Task<string?> GetOrFetchUserEmailAsync()
     {
-        lock (_lock)
+        if (_currentUserEmail == null)
         {
-            return Task.FromResult(_currentUserEmail != null);
+            try
+            {
+                var result = await _sessionStorage.GetAsync<string>(CurrentUserKey);
+                if (result.Success && !string.IsNullOrEmpty(result.Value))
+                {
+                    lock (_lock)
+                    {
+                        _currentUserEmail = result.Value;
+                    }
+                }
+            }
+            catch
+            {
+                // Session storage access can fail during static rendering/prerendering
+            }
         }
+        return _currentUserEmail;
+    }
+
+    public async Task<bool> IsAuthenticatedAsync()
+    {
+        var email = await GetOrFetchUserEmailAsync();
+        return email != null;
     }
 
     public async Task<bool> LoginAsync(string email, string password)
@@ -46,36 +67,42 @@ public class AuthService : IAuthService
             {
                 _currentUserEmail = email;
             }
+            try
+            {
+                await _sessionStorage.SetAsync(CurrentUserKey, email);
+            }
+            catch
+            {
+            }
             return true;
         }
 
         return false;
     }
 
-    public Task LogoutAsync()
+    public async Task LogoutAsync()
     {
         lock (_lock)
         {
             _currentUserEmail = null;
         }
-        return Task.CompletedTask;
+        try
+        {
+            await _sessionStorage.DeleteAsync(CurrentUserKey);
+        }
+        catch
+        {
+        }
     }
 
-    public Task<string?> GetCurrentUserEmailAsync()
+    public async Task<string?> GetCurrentUserEmailAsync()
     {
-        lock (_lock)
-        {
-            return Task.FromResult(_currentUserEmail);
-        }
+        return await GetOrFetchUserEmailAsync();
     }
 
     public async Task<string?> GetCurrentUserFirstNameAsync()
     {
-        string? email;
-        lock (_lock)
-        {
-            email = _currentUserEmail;
-        }
+        string? email = await GetOrFetchUserEmailAsync();
 
         if (string.IsNullOrEmpty(email))
         {
@@ -112,11 +139,7 @@ public class AuthService : IAuthService
 
     public async Task<User?> GetCurrentUserAsync()
     {
-        string? email;
-        lock (_lock)
-        {
-            email = _currentUserEmail;
-        }
+        string? email = await GetOrFetchUserEmailAsync();
 
         if (string.IsNullOrEmpty(email))
         {
