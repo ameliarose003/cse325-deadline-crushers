@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Momentum.Components;
 using Momentum.Data;
 using Momentum.Services;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,8 @@ builder.Services.AddDbContext<MomentumDbContext>(options =>
 
 builder.Services.AddSingleton<IHabitService, HabitService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+builder.Services.AddScoped<ProtectedSessionStorage>();
 
 var app = builder.Build();
 

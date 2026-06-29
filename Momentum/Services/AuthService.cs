@@ -3,6 +3,7 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Momentum.Data;
 using Momentum.Models;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 
 namespace Momentum.Services;
 
@@ -11,10 +12,13 @@ public class AuthService : IAuthService
     private readonly MomentumDbContext _dbContext;
     private string? _currentUserEmail;
     private readonly object _lock = new();
+    private readonly ProtectedSessionStorage _sessionStorage;
+    private const string CurrentUserKey = "currentUserEmail";
 
-    public AuthService(MomentumDbContext dbContext)
+    public AuthService(MomentumDbContext dbContext, ProtectedSessionStorage sessionStorage)
     {
         _dbContext = dbContext;
+        _sessionStorage = sessionStorage;
         InitializeDefaultUser();
     }
 
