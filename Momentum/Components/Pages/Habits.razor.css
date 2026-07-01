@@ -1,0 +1,269 @@
+/* Habits Page Container */
+.habits-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem;
+    color: #1e293b;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* Page Header */
+.habits-header {
+    margin-bottom: 0.5rem;
+}
+
+.habits-header h1 {
+    font-size: 2.25rem;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0 0 0.25rem 0;
+}
+
+.habits-header p {
+    color: #64748b;
+    font-size: 1.05rem;
+    margin: 0;
+}
+
+/* Section Panels */
+.history-panel {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+    border: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.panel-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Contribution Grid / Heatmap Section */
+.heatmap-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.heatmap-label {
+    font-size: 0.875rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.heatmap-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.375rem;
+    max-width: max-content;
+}
+
+@media (min-width: 480px) {
+    .heatmap-grid {
+        grid-template-columns: repeat(14, 1fr); /* 2 weeks */
+    }
+}
+
+@media (min-width: 768px) {
+    .heatmap-grid {
+        grid-template-columns: repeat(28, 1fr); /* 4 weeks */
+    }
+}
+
+/* Heatmap Day Blocks */
+.heatmap-day {
+    position: relative;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 0.25rem;
+    transition: transform 0.15s ease, background-color 0.2s ease;
+    cursor: help;
+}
+
+.heatmap-day:hover {
+    transform: scale(1.15);
+    z-index: 10;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Heatmap Block Colors based on completion rate */
+.rate-0 { background-color: #ebedf0; border: 1px solid #e1e4e8; }
+.rate-1 { background-color: #c6e48b; }
+.rate-2 { background-color: #7bc96f; }
+.rate-3 { background-color: #239a3b; }
+.rate-4 { background-color: #196127; }
+
+/* Tooltip implementation */
+.heatmap-day::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 135%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #1e293b;
+    color: white;
+    font-size: 0.75rem;
+    padding: 0.375rem 0.625rem;
+    border-radius: 0.375rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.heatmap-day:hover::after {
+    opacity: 1;
+}
+
+/* Heatmap Legend */
+.heatmap-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.5rem;
+}
+
+.legend-block {
+    width: 0.875rem;
+    height: 0.875rem;
+    border-radius: 0.125rem;
+}
+
+/* Weekly Matrix Table */
+.matrix-wrapper {
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+}
+
+.matrix-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.matrix-table th, .matrix-table td {
+    padding: 1rem 0.75rem;
+    text-align: center;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.matrix-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.matrix-table td.habit-info-col {
+    text-align: left;
+    font-weight: 600;
+    color: #1e293b;
+    min-width: 180px;
+}
+
+.habit-category-label {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 0.125rem 0.375rem;
+    border-radius: 9999px;
+    font-weight: 700;
+    margin-left: 0.5rem;
+}
+
+.cat-health { background: #fee2e2; color: #ef4444; }
+.cat-work { background: #e0e7ff; color: #4f46e5; }
+.cat-mind { background: #fef3c7; color: #d97706; }
+.cat-fitness { background: #ecfdf5; color: #059669; }
+
+/* Matrix Interactive Cells */
+.matrix-cell {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.matrix-cell:hover {
+    background-color: #f1f5f9;
+}
+
+.matrix-checkbox-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.matrix-checkbox {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    border: 2px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: transparent;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: bold;
+    font-size: 1rem;
+    background-color: white;
+}
+
+.matrix-cell:hover .matrix-checkbox {
+    border-color: #3b82f6;
+}
+
+.matrix-checkbox.completed {
+    background-color: #10b981;
+    border-color: #10b981;
+    color: white;
+    transform: scale(1.05);
+    box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+}
+
+.matrix-checkbox.completed:hover {
+    background-color: #059669;
+    border-color: #059669;
+}
+
+/* Streak info column */
+.matrix-table td.streak-col {
+    font-weight: 700;
+    color: #f97316;
+}
+
+/* Seeding Info/Alert */
+.alert-seed {
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e3a8a;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.alert-seed-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+}

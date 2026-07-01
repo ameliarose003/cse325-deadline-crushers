@@ -210,3 +210,31 @@
     color: #be185d;
     text-decoration: underline;
 }
+
+.password-toggle {
+    position: absolute;
+    right: 1rem;
+    background: transparent;
+    border: none;
+    color: #ec4899;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
+}
+
+.password-toggle:hover {
+    color: #be185d;
+}
+
+.validation-error {
+    color: #dc2626;
+    font-size: 0.85rem;
+    margin-top: 0.4rem;
+}
+
+.validation-success {
+    color: #16a34a;
+    font-size: 0.85rem;
+    margin-top: 0.4rem;
+}
