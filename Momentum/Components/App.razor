@@ -15,7 +15,7 @@
 </head>
 
 <body>
-    <Routes />
+    <Routes @rendermode="@(new Microsoft.AspNetCore.Components.Web.InteractiveServerRenderMode(prerender: false))" />
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
 </body>
