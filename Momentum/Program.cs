@@ -20,6 +20,18 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 builder.Services.AddScoped<ProtectedSessionStorage>();
 
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddAuthorization();
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = "CustomScheme";
+    options.DefaultChallengeScheme = "CustomScheme";
+})
+.AddCookie("CustomScheme", options =>
+{
+    options.LoginPath = "/login";
+});
+
 builder.Services.AddScoped(sp => 
 {
     var navigationManager = sp.GetRequiredService<NavigationManager>();
@@ -45,11 +57,14 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveServerRenderMode()
+    .AllowAnonymous();
 
 app.MapPost("/api/register", async (Momentum.Models.RegisterRequest request, IAuthService authService) =>
 {
