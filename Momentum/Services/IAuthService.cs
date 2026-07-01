@@ -9,4 +9,5 @@ public interface IAuthService
     Task<string?> GetCurrentUserFirstNameAsync();
     Task<bool> RegisterUserAsync(string email, string password, string firstName, string lastName);
     Task<List<string>> GetRegisteredUsersAsync();
+    Task<bool> ResetPasswordAsync(string email, string newPassword);
 }
