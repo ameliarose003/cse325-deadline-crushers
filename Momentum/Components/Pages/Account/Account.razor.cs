@@ -13,7 +13,6 @@ public partial class Account
     [Inject]
     protected NavigationManager NavigationManager { get; set; } = null!;
 
-    protected bool isAuthenticated;
     protected string email = string.Empty;
     protected string firstName = string.Empty;
     protected string lastName = string.Empty;
@@ -25,13 +24,6 @@ public partial class Account
 
     protected override async Task OnInitializedAsync()
     {
-        isAuthenticated = await AuthService.IsAuthenticatedAsync();
-        if (!isAuthenticated)
-        {
-            NavigationManager.NavigateTo("/login");
-            return;
-        }
-
         var user = await AuthService.GetCurrentUserAsync();
         if (user != null)
         {

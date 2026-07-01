@@ -2,8 +2,10 @@
 @rendermode @(new Microsoft.AspNetCore.Components.Web.InteractiveServerRenderMode(prerender: false))
 @using Momentum.Components.Shared
 @using Momentum.Services
+@using Momentum.Models
 @inject IAuthService AuthService
 @inject NavigationManager NavigationManager
+@inject HttpClient Http
 
 <PageTitle>Momentum - Register</PageTitle>
 
@@ -127,14 +129,29 @@
             return;
         }
 
-        var success = await AuthService.RegisterUserAsync(email, password, firstName, lastName);
-        if (success)
+        try
         {
-            NavigationManager.NavigateTo("/login?registered=true");
+            var response = await Http.PostAsJsonAsync("api/register", new RegisterRequest 
+            { 
+                Email = email, 
+                Password = password, 
+                FirstName = firstName, 
+                LastName = lastName 
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                NavigationManager.NavigateTo("/login?registered=true");
+            }
+            else
+            {
+                var errorData = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                errorMessage = errorData?.ContainsKey("message") == true ? errorData["message"] : "Registration failed.";
+            }
         }
-        else
+        catch (Exception ex)
         {
-            errorMessage = "Email is already registered.";
+            errorMessage = $"An error occurred: {ex.Message}";
         }
     }
 

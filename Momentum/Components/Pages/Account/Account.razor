@@ -1,12 +1,10 @@
 @page "/account"
+@attribute [Authorize]
 @rendermode @(new Microsoft.AspNetCore.Components.Web.InteractiveServerRenderMode(prerender: false))
 @using Momentum.Models
 @using Momentum.Services
 
 <PageTitle>Momentum - Account Settings</PageTitle>
-
-@if (isAuthenticated)
-{
     <div class="account-page-wrapper">
         <div class="account-page-container">
             <div class="account-header">
@@ -92,5 +90,5 @@
             </a>
         </div>
     </div>
-}
+
 
