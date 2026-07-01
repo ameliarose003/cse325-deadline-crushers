@@ -3,8 +3,6 @@
 @rendermode @(new Microsoft.AspNetCore.Components.Web.InteractiveServerRenderMode(prerender: false))
 @using Momentum.Models
 @using Momentum.Services
-@inject IAuthService AuthService
-@inject NavigationManager NavigationManager
 
 <PageTitle>Momentum - Account Settings</PageTitle>
     <div class="account-page-wrapper">
@@ -93,63 +91,4 @@
         </div>
     </div>
 
-@code {
-    private string email = string.Empty;
-    private string firstName = string.Empty;
-    private string lastName = string.Empty;
-    private string newPassword = string.Empty;
-    private string confirmPassword = string.Empty;
 
-    private string? successMessage;
-    private string? errorMessage;
-
-    protected override async Task OnInitializedAsync()
-    {
-        var user = await AuthService.GetCurrentUserAsync();
-        if (user != null)
-        {
-            email = user.Email;
-            firstName = user.FirstName;
-            lastName = user.LastName;
-        }
-    }
-
-    private async Task HandleSubmit()
-    {
-        successMessage = null;
-        errorMessage = null;
-
-        if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
-        {
-            errorMessage = "First name and last name are required.";
-            return;
-        }
-
-        if (!string.IsNullOrEmpty(newPassword))
-        {
-            if (newPassword.Length < 8)
-            {
-                errorMessage = "Password must be at least 8 characters.";
-                return;
-            }
-
-            if (newPassword != confirmPassword)
-            {
-                errorMessage = "Passwords do not match.";
-                return;
-            }
-        }
-
-        var success = await AuthService.UpdateCurrentUserAsync(firstName, lastName, string.IsNullOrEmpty(newPassword) ? null : newPassword);
-        if (success)
-        {
-            successMessage = "Account updated successfully!";
-            newPassword = string.Empty;
-            confirmPassword = string.Empty;
-        }
-        else
-        {
-            errorMessage = "Failed to update account. Please try again.";
-        }
-    }
-}
