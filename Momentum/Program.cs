@@ -5,6 +5,7 @@ using Momentum.Services;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,18 +20,14 @@ builder.Services.AddSingleton<IHabitService, HabitService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 builder.Services.AddScoped<ProtectedSessionStorage>();
-
 builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddAuthorization();
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultScheme = "CustomScheme";
+    options.DefaultAuthenticateScheme = "CustomScheme";
     options.DefaultChallengeScheme = "CustomScheme";
 })
-.AddCookie("CustomScheme", options =>
-{
-    options.LoginPath = "/login";
-});
+.AddScheme<AuthenticationSchemeOptions, CustomAuthenticationHandler>("CustomScheme", options => { });
+builder.Services.AddAuthorization();
 
 builder.Services.AddScoped(sp => 
 {
@@ -56,6 +53,7 @@ if (!app.Environment.IsDevelopment())
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
+
 
 app.UseAuthentication();
 app.UseAuthorization();
