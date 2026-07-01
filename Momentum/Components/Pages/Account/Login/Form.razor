@@ -70,6 +70,8 @@
 
     private async Task HandleSubmit()
     {
+        errorMessage = null;
+
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
         {
             errorMessage = "Please enter both email and password.";
@@ -91,10 +93,12 @@
         try
         {
             var response = await Http.PostAsJsonAsync("api/login", new LoginRequest { Email = email, Password = password });
+            
             if (response.IsSuccessStatusCode)
             {
                 // API validated credentials successfully. Now log in locally to store the session.
                 var success = await AuthService.LoginAsync(email, password);
+                
                 if (success)
                 {
                     NavigationManager.NavigateTo("/");
