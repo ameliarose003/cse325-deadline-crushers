@@ -19,6 +19,9 @@ builder.Services.AddSingleton<IHabitService, HabitService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 builder.Services.AddScoped<ProtectedSessionStorage>();
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddAuthentication();
+builder.Services.AddAuthorization();
 
 builder.Services.AddScoped(sp => 
 {
