@@ -213,4 +213,23 @@ public class AuthService : IAuthService
         }
         return builder.ToString();
     }
+
+    public async Task<bool> ResetPasswordAsync(string email, string newPassword)
+    {
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(newPassword))
+        {
+            return false;
+        }
+
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email.ToUpper() == email.ToUpper());
+        if (user == null)
+        {
+            return false;
+        }
+
+        user.PasswordHash = HashPassword(newPassword);
+        _dbContext.Users.Update(user);
+        await _dbContext.SaveChangesAsync();
+        return true;
+    }
 }
