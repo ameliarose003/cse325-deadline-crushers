@@ -1,0 +1,14 @@
+@page "/logout"
+@using Momentum.Services
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+
+<h3>Logging out...</h3>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/");
+    }
+}

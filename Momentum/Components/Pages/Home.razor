@@ -1,4 +1,5 @@
 ﻿@page "/"
+@attribute [Authorize]
 @rendermode @(new Microsoft.AspNetCore.Components.Web.InteractiveServerRenderMode(prerender: false))
 @using Momentum.Models
 @using Momentum.Services
@@ -8,9 +9,7 @@
 
 <PageTitle>Momentum - Dashboard</PageTitle>
 
-@if (isAuthenticated)
-{
-    <div class="dashboard-container">
+<div class="dashboard-container">
         @* Greeting Header *@
         <header class="dashboard-header">
             <div class="welcome-msg">
@@ -21,6 +20,9 @@
                 <div class="date-badge">
                     📅 @TodayDateFormatted
                 </div>
+                <button class="btn-dev" @onclick='() => NavigationManager.NavigateTo("/Habits")' style="border-color: #6366f1; color: #4f46e5; border-radius: 9999px; padding: 0.5rem 1rem;">
+                    Habits
+                </button>
                 <button class="btn-dev" @onclick='() => NavigationManager.NavigateTo("/account")' style="border-color: #6366f1; color: #4f46e5; border-radius: 9999px; padding: 0.5rem 1rem;">
                     Account
                 </button>
@@ -174,11 +176,8 @@
             </div>
         </footer>
     </div>
-}
 
 @code {
-    // Authentication Guard State
-    private bool isAuthenticated;
     private string userName = string.Empty;
 
     // Dynamic Header values
@@ -192,13 +191,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        isAuthenticated = await AuthService.IsAuthenticatedAsync();
-        if (!isAuthenticated)
-        {
-            NavigationManager.NavigateTo("/login");
-            return;
-        }
-
         var firstName = await AuthService.GetCurrentUserFirstNameAsync();
         userName = !string.IsNullOrWhiteSpace(firstName) ? firstName : "John";
 

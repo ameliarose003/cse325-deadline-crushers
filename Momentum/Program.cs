@@ -2,6 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using Momentum.Components;
 using Momentum.Data;
 using Momentum.Services;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +18,22 @@ builder.Services.AddDbContext<MomentumDbContext>(options =>
 
 builder.Services.AddSingleton<IHabitService, HabitService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
+builder.Services.AddScoped<ProtectedSessionStorage>();
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = "CustomScheme";
+    options.DefaultChallengeScheme = "CustomScheme";
+})
+.AddScheme<AuthenticationSchemeOptions, CustomAuthenticationHandler>("CustomScheme", options => { });
+builder.Services.AddAuthorization();
+
+builder.Services.AddScoped(sp => 
+{
+    var navigationManager = sp.GetRequiredService<NavigationManager>();
+    return new HttpClient { BaseAddress = new Uri(navigationManager.BaseUri) };
+});
 
 var app = builder.Build();
 
@@ -34,11 +54,15 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
+
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveServerRenderMode()
+    .AllowAnonymous();
 
 app.MapPost("/api/register", async (Momentum.Models.RegisterRequest request, IAuthService authService) =>
 {

@@ -2,8 +2,10 @@
 @rendermode @(new Microsoft.AspNetCore.Components.Web.InteractiveServerRenderMode(prerender: false))
 @using Momentum.Components.Shared
 @using Momentum.Services
+@using Momentum.Models
 @inject IAuthService AuthService
 @inject NavigationManager NavigationManager
+@inject HttpClient Http
 
 <PageTitle>Momentum - Register</PageTitle>
 
@@ -41,7 +43,7 @@
             <div class="form-group">
                 <div class="input-wrapper">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                    <input type="email" id="email" @bind:event="oninput" placeholder="Email Address" required />
+                    <input type="email" id="email" @bind="email" @bind:event="oninput" placeholder="Email Address" required />
                 </div>
                 @if (!string.IsNullOrWhiteSpace(email) && !email.Contains("@"))
                     {
@@ -127,14 +129,29 @@
             return;
         }
 
-        var success = await AuthService.RegisterUserAsync(email, password, firstName, lastName);
-        if (success)
+        try
         {
-            NavigationManager.NavigateTo("/login?registered=true");
+            var response = await Http.PostAsJsonAsync("api/register", new RegisterRequest 
+            { 
+                Email = email, 
+                Password = password, 
+                FirstName = firstName, 
+                LastName = lastName 
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                NavigationManager.NavigateTo("/login?registered=true");
+            }
+            else
+            {
+                var errorData = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                errorMessage = errorData?.ContainsKey("message") == true ? errorData["message"] : "Registration failed.";
+            }
         }
-        else
+        catch (Exception ex)
         {
-            errorMessage = "Email is already registered.";
+            errorMessage = $"An error occurred: {ex.Message}";
         }
     }
 
