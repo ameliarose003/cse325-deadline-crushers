@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore.Migrations.Operations;
 
 namespace Momentum.Models;
 
@@ -29,4 +30,5 @@ public class Habit
     public User? User { get; set; }
 
     public ICollection<HabitLog> Logs { get; set; } = new List<HabitLog>();
+    public DateTime? UpdatedAt { get; set; }
 }

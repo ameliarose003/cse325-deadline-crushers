@@ -1,4 +1,4 @@
-@page "/"
+﻿@page "/"
 @attribute [Authorize]
 @rendermode @(new Microsoft.AspNetCore.Components.Web.InteractiveServerRenderMode(prerender: false))
 @using Momentum.Models
@@ -78,7 +78,8 @@
                 @* Left Column: Daily Habits Quick-View *@
                 <section class="dashboard-panel">
                     <h2 class="panel-title">
-                        <span>⚡ Daily Habits Quick-View</span>
+                        <a href="/habits">⚡ Daily Habits Quick-View</a>
+                        <HabitModal OnHabitAdded="LoadDashboardDataAsync"/> 
                     </h2>
                     <div class="habit-list-container">
                         @foreach (var habit in habits)
