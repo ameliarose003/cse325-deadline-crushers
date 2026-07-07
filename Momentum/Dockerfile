@@ -1,5 +1,5 @@
-# Use the official .NET SDK image to build the app
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
+# Use the official .NET 10 Preview SDK image to build the app
+FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build-env
 WORKDIR /App
 
 # Copy everything and restore/publish
@@ -7,8 +7,8 @@ COPY . ./
 RUN dotnet restore
 RUN dotnet publish -c Release -o out
 
-# Build runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:10.0
+# Build runtime image using .NET 10 Preview
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview
 WORKDIR /App
 COPY --from=build-env /App/out .
 
@@ -16,4 +16,4 @@ COPY --from=build-env /App/out .
 ENV ASPNETCORE_URLS=http://+:10000
 EXPOSE 10000
 
-ENTRYPOINT ["dotnet", "momentum.dll"]
+ENTRYPOINT ["dotnet", "Momentum.dll"]
