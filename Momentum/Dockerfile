@@ -8,7 +8,7 @@ COPY . .
 # Explicitly point to your .csproj file
 # (Adjust "Momentum.csproj" to "Momentum/Momentum.csproj" if it's in a subfolder)
 RUN dotnet restore "Momentum.csproj"
-RUN dotnet publish "Momentum.csproj" -c Release -o /app/publish
+RUN dotnet publish "Momentum/Momentum.csproj" -c Release -o /app/publish
 
 # Stage 2: Build the lightweight runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview
