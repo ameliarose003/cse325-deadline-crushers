@@ -25,8 +25,8 @@
     [Parameter]
     public EventCallback OnHabitAdded { get; set; }
     
-    string HabitName;
-    string Category;
+    private string? HabitName {get; set;}
+    private string? Category {get; set;}
     private bool _isModalOpen = false;
 
     private async Task HandleSubmit() {
