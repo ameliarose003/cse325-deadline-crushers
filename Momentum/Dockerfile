@@ -1,16 +1,18 @@
-# Use the official .NET 10 Preview SDK image to build the app
+# Stage 1: Build & Publish the application
 FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build-env
-WORKDIR /App
+WORKDIR /src
 
-# Copy everything and restore/publish
-COPY . ./
+# Copy all files from the Momentum folder into the container
+COPY . .
+
+# Explicitly restore and publish using absolute paths
 RUN dotnet restore
-RUN dotnet publish -c Release -o out
+RUN dotnet publish -c Release -o /app/publish
 
-# Build runtime image using .NET 10 Preview
+# Stage 2: Build the lightweight runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview
-WORKDIR /App
-COPY --from=build-env /App/out .
+WORKDIR /app
+COPY --from=build-env /app/publish .
 
 # Render dynamically assigns a port via the PORT environment variable
 ENV ASPNETCORE_URLS=http://+:10000
