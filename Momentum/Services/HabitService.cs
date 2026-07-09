@@ -1,3 +1,5 @@
+using System.Globalization;
+using Microsoft.Extensions.ObjectPool;
 using Momentum.Models;
 
 namespace Momentum.Services;
@@ -12,6 +14,7 @@ public class HabitService : IHabitService
     {
         InitializeCalendar();
         PopulateDefaultHabits();
+        ResetDailyHabits();
     }
 
     public Task<List<Habit>> GetTodayHabitsAsync()
@@ -26,7 +29,8 @@ public class HabitService : IHabitService
                 IsCompleted = h.IsCompleted,
                 Streak = h.Streak,
                 Category = h.Category,
-                CategoryLabel = h.CategoryLabel
+                CategoryLabel = h.CategoryLabel,
+                UpdatedAt = DateTime.Now.Date
             }).ToList());
         }
     }
@@ -42,15 +46,30 @@ public class HabitService : IHabitService
                 if (habit.IsCompleted)
                 {
                     habit.Streak++;
+                    habit.UpdatedAt = DateTime.Now.Date;
                 }
                 else
                 {
                     habit.Streak--;
+                    habit.UpdatedAt = null;
                 }
+
                 UpdateCalendarState();
             }
         }
         return Task.CompletedTask;
+    }
+
+    public void ResetDailyHabits()
+    {
+        foreach (var habit in _habits)
+        {
+            if (habit.UpdatedAt != DateTime.Now.Date)
+            {
+                habit.IsCompleted = false;
+            }
+            
+        }
     }
 
     public Task<List<WeekDay>> GetWeeklyCalendarAsync()
@@ -107,12 +126,30 @@ public class HabitService : IHabitService
         return Task.CompletedTask;
     }
 
+    public Task AddNewHabitAsync(string Name, string Category)
+    {
+        lock (_lock)
+        {
+            PopulateNewHabits(Name, Category);
+        }
+        return Task.CompletedTask;
+
+    }
+
+    private void PopulateNewHabits(string Name, string Category)
+    {
+        int newId = _habits.Count() == 0 ? 1 : _habits.Max(h => h.Id) + 1;
+        _habits.Add(new()  {Id = newId, Name = Name, IsCompleted = false, Streak = 0, Category = Category, CategoryLabel = Category.ToUpper()});
+        UpdateCalendarState();
+
+    }
+
     private void PopulateDefaultHabits()
     {
         _habits.Clear();
         _habits.AddRange(new List<Habit>
         {
-            new() { Id = 1, Name = "Read 10 pages of a book", IsCompleted = true, Streak = 5, Category = "mind", CategoryLabel = "Mind" },
+            new() { Id = 1, Name = "Read 10 pages of a book", IsCompleted = true, Streak = 5, Category = "mind", CategoryLabel = "Mind", UpdatedAt = DateTime.Now.Date.AddDays(-1) },
             new() { Id = 2, Name = "Drink 3 liters of water", IsCompleted = false, Streak = 2, Category = "health", CategoryLabel = "Health" },
             new() { Id = 3, Name = "30-minute cardio workout", IsCompleted = true, Streak = 9, Category = "fitness", CategoryLabel = "Fitness" },
             new() { Id = 4, Name = "Code on side project", IsCompleted = false, Streak = 4, Category = "work", CategoryLabel = "Work" },
@@ -144,6 +181,7 @@ public class HabitService : IHabitService
             IsCompleted = d.Name == "Monday" || d.Name == "Wednesday",
             IsToday = d.Name == todayName
         }).ToList());
+        
     }
 
     private void UpdateCalendarState()
