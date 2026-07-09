@@ -10,4 +10,5 @@ public interface IHabitService
     Task<OverviewStats> GetOverviewStatsAsync();
     Task ResetAllHabitsAsync();
     Task PopulateMockHabitsAsync();
+    Task AddNewHabitAsync(string Name, string Category);
 }
