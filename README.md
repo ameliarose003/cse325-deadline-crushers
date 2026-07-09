@@ -8,5 +8,5 @@ https://cse325-deadline-crushers-1.onrender.com/login
 - Bryson Webb
 - Fernando Pinto Coronel
 - Yvette Johnson
-- Carolina Barioin Perez Madella
+- Carolina Barion Perez Madella
 - Spencer Beals
