@@ -205,8 +205,62 @@
 
     private async Task ToggleHabit(Habit habit)
     {
-        await HabitService.ToggleHabitCompletionAsync(habit.Id);
-        await LoadDashboardDataAsync();
+        // Save old state for rollback
+        var oldCompleted = habit.IsCompleted;
+        var oldStreak = habit.Streak;
+        var oldStats = new OverviewStats
+        {
+            TotalCount = stats.TotalCount,
+            CompletedCount = stats.CompletedCount,
+            CompletionRate = stats.CompletionRate,
+            CurrentStreak = stats.CurrentStreak,
+            LongestStreak = stats.LongestStreak
+        };
+
+        // Optimistically update habit properties
+        habit.IsCompleted = !habit.IsCompleted;
+        if (habit.IsCompleted)
+        {
+            habit.Streak++;
+        }
+        else
+        {
+            habit.Streak--;
+        }
+
+        // Optimistically update overview stats
+        stats.CompletedCount = habits.Count(h => h.IsCompleted);
+        stats.CompletionRate = stats.TotalCount == 0 ? 0 : (stats.CompletedCount * 100) / stats.TotalCount;
+
+        // Optimistically update calendar completion status for today
+        var todayName = DateTime.Now.DayOfWeek.ToString();
+        var todayCol = weekDays.FirstOrDefault(d => d.Name == todayName);
+        if (todayCol != null)
+        {
+            todayCol.IsCompleted = stats.CompletedCount > 0;
+        }
+
+        StateHasChanged(); // Force immediate UI refresh
+
+        try
+        {
+            await HabitService.ToggleHabitCompletionAsync(habit.Id);
+            // Re-fetch data from database in background to sync any other fields (e.g. streaks)
+            await LoadDashboardDataAsync();
+        }
+        catch (Exception ex)
+        {
+            // Rollback on failure
+            habit.IsCompleted = oldCompleted;
+            habit.Streak = oldStreak;
+            stats = oldStats;
+            if (todayCol != null)
+            {
+                todayCol.IsCompleted = stats.CompletedCount > 0;
+            }
+            Console.WriteLine($"Error toggling habit: {ex.Message}");
+            StateHasChanged();
+        }
     }
 
     private async Task LoadMockHabits()
