@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Momentum.Data;
 using Momentum.Models;
@@ -200,6 +205,28 @@ public class HabitService : IHabitService
             await _db.Habits.AddRangeAsync(defaultHabits);
             await _db.SaveChangesAsync();
         }
+    }
+
+    public async Task AddNewHabitAsync(string Name, string Category)
+    {
+        var user = await _authService.GetCurrentUserAsync();
+        if (user == null)
+        {
+            return;
+        }
+
+        var newHabit = new Habit
+        {
+            Name = Name,
+            Category = Category.ToLower(),
+            CategoryLabel = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(Category),
+            UserId = user.Id,
+            IsCompleted = false,
+            Streak = 0
+        };
+
+        _db.Habits.Add(newHabit);
+        await _db.SaveChangesAsync();
     }
 
     private int CalculateStreak(Habit habit)

@@ -1,4 +1,4 @@
-@page "/"
+@page "/dashboard"
 @attribute [Authorize]
 @rendermode @(new Microsoft.AspNetCore.Components.Web.InteractiveServerRenderMode(prerender: false))
 @using Momentum.Models
@@ -8,6 +8,11 @@
 @inject NavigationManager NavigationManager
 
 <PageTitle>Momentum - Dashboard</PageTitle>
+
+<HeadContent>
+    <meta name="description"
+          content="View and manage your Momentum dashboard and account information." />
+</HeadContent>
 
 <div class="dashboard-container">
         @* Greeting Header *@
@@ -78,7 +83,8 @@
                 @* Left Column: Daily Habits Quick-View *@
                 <section class="dashboard-panel">
                     <h2 class="panel-title">
-                        <span>⚡ Daily Habits Quick-View</span>
+                        <a href="habits">⚡ Daily Habits Quick-View</a>
+                        <HabitModal OnHabitAdded="LoadDashboardDataAsync"/> 
                     </h2>
                     <div class="habit-list-container">
                         @foreach (var habit in habits)

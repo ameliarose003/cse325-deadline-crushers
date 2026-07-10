@@ -1,0 +1,53 @@
+@inject Momentum.Services.IHabitService HabitService
+<button id="openHabitModal" class="trigger-modal-btn" @onclick="OpenModal">Create a new Habit</button>
+
+@if (_isModalOpen) 
+{
+    <div id="customModal" class="modal-overlay">
+        <div class="habit-modal" @onclick:stopPropagation>
+            <button class="close-btn" @onclick="CloseModal">X</button>
+            <EditForm Model="this" OnValidSubmit="HandleSubmit">
+                <div  class="modal-form">
+
+                    <label for="habitTitle">Habit:</label>
+                    <InputText type="text" name="habit" id="habitTitle" @bind-Value="HabitName" placeholder="ex. Walk a mile" />
+                    <label for="category">Category</label>
+                    <InputText type="text" name="category" id="category" @bind-Value="Category" placeholder="ex. Physical" />
+                    <button type="submit">Create Habit</button>
+                </div>
+            </EditForm>
+        </div>
+
+    </div>
+}
+
+@code {
+    [Parameter]
+    public EventCallback OnHabitAdded { get; set; }
+    
+    private string HabitName {get; set;} = string.Empty;
+    private string Category {get; set;} = string.Empty;
+    private bool _isModalOpen = false;
+
+    private async Task HandleSubmit() {
+        await HabitService.AddNewHabitAsync(HabitName, Category);
+        await OnHabitAdded.InvokeAsync();
+        CloseModal();
+    }
+
+    private void OpenModal() 
+    {
+        _isModalOpen = true;
+    }
+
+    private void CloseModal() 
+    {
+        HabitName = string.Empty;
+        Category = string.Empty;
+        _isModalOpen = false;
+    }
+
+}
+
+
+
