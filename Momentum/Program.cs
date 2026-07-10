@@ -21,6 +21,9 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 builder.Services.AddScoped<ProtectedSessionStorage>();
 
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddAuthorizationCore();
+
 builder.Services.AddScoped(sp => 
 {
     var navigationManager = sp.GetRequiredService<NavigationManager>();
