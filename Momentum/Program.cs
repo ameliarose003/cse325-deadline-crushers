@@ -20,7 +20,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddDbContext<MomentumDbContext>(options =>
     options.UseSqlite("Data Source=momentum.db"));
 
-builder.Services.AddSingleton<IHabitService, HabitService>();
+builder.Services.AddScoped<IHabitService, HabitService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 builder.Services.AddScoped<ProtectedSessionStorage>();
@@ -45,7 +45,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<MomentumDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 }
 
 // Configure the HTTP request pipeline.
