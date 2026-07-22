@@ -286,6 +286,11 @@
         }
         var existingLog = await DbContext.HabitLogs.Where(log => log.HabitId == habit.Id && log.Date == date).FirstOrDefaultAsync();
 
+        // Save old state for rollback
+        var oldStreak = habit.Streak;
+        var oldLogs = habit.Logs.ToList();
+
+        // Optimistically apply local state changes
         if (existingLog != null)
         {
             // Remove log
@@ -294,8 +299,7 @@
         }
         else
         {
-            // Create log
-            var newLog = new HabitLog
+            addedLog = new HabitLog
             {
                 HabitId = habit.Id,
                 Date = date,
