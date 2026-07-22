@@ -236,34 +236,60 @@
     private async Task ToggleLogAsync(Habit habit, DateOnly date)
     {
         var existingLog = habit.Logs.FirstOrDefault(l => l.Date == date);
+        HabitLog? addedLog = null;
 
+        // Save old state for rollback
+        var oldStreak = habit.Streak;
+        var oldLogs = habit.Logs.ToList();
+
+        // Optimistically apply local state changes
         if (existingLog != null)
         {
-            // Remove log
-            DbContext.HabitLogs.Remove(existingLog);
             habit.Logs.Remove(existingLog);
         }
         else
         {
-            // Create log
-            var newLog = new HabitLog
+            addedLog = new HabitLog
             {
                 HabitId = habit.Id,
                 Date = date,
                 IsCompleted = true
             };
-            DbContext.HabitLogs.Add(newLog);
-            habit.Logs.Add(newLog);
+            habit.Logs.Add(addedLog);
         }
 
-        // Recalculate streak
+        // Recalculate streak and regenerate heatmap immediately
         habit.Streak = CalculateStreak(habit);
-        
-        // Save database changes
-        await DbContext.SaveChangesAsync();
-
-        // Refresh stats
         await GenerateHeatmapDaysAsync();
+        StateHasChanged(); // Force immediate UI refresh
+
+        try
+        {
+            // Now apply actual database context operations
+            if (existingLog != null)
+            {
+                DbContext.HabitLogs.Remove(existingLog);
+            }
+            else if (addedLog != null)
+            {
+                DbContext.HabitLogs.Add(addedLog);
+            }
+
+            // Save database changes
+            await DbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            // Rollback state on exception
+            habit.Streak = oldStreak;
+            habit.Logs = oldLogs;
+
+            // Re-render heatmap to old state
+            await GenerateHeatmapDaysAsync();
+            StateHasChanged();
+
+            Console.WriteLine($"Error saving habit log: {ex.Message}");
+        }
     }
 
     private int CalculateStreak(Habit habit)
