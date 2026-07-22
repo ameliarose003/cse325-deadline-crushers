@@ -13,4 +13,13 @@ public class MomentumDbContext : DbContext
         : base(options)
     {
     }
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Habit>()
+            .HasMany(habit => habit.Logs)
+            .WithOne(log => log.Habit)
+            .HasForeignKey(log => log.HabitId)
+            .OnDelete(DeleteBehavior.Cascade);
+        base.OnModelCreating(modelBuilder);
+    }
 }
