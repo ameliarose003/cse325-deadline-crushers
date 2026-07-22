@@ -1,14 +1,9 @@
 @page "/habits"
-@layout MainLayout
 @attribute [Authorize]
-@rendermode InteractiveServer
-@inject IHabitService HabitService
-@inject IJSRuntime JS
 @using Momentum.Models
 @using Momentum.Services
 @using Momentum.Data
 @using Microsoft.EntityFrameworkCore
-
 @inject MomentumDbContext DbContext
 @inject IAuthService AuthService
 @inject NavigationManager NavigationManager
@@ -17,11 +12,8 @@
 
 <div class="habits-container">
     <header class="habits-header">
-        <div class="welcome-msg">
         <h1>Habits History</h1>
         <p>Analyze your consistency and check your historical completions.</p>
-        </div>
-
     </header>
 
     @if (loading)
@@ -79,15 +71,10 @@
 
         <!-- 2. Weekly Matrix Section -->
         <section class="history-panel">
-            <div class="panel-header">
             <h2 class="panel-title">
                 <span>📅 7-Day Completion Grid</span>
             </h2>
 
-            <HabitModal OnHabitAdded="LoadDataAsync" />
-                </div>
-
-            
             <div class="matrix-wrapper">
                 <table class="matrix-table">
                     <thead>
@@ -108,19 +95,10 @@
                         {
                             <tr>
                                 <td class="habit-info-col">
-                                    <div class="habit-info-row">
-                                        <div>
-                                        <span class="habit-name">@habit.Name</span>
-                                        <span class="habit-category-label cat-@habit.Category.ToLower()">
-                                            @habit.CategoryLabel
-                                        </span>
-                                    </div>
-                                    <button class="btn-delete-habit"
-                                        title="Remove"
-                                        @onclick="() => DeleteHabitAsync(habit)"
-                                        @onclick:stopPropagation="true">Remove
-                                    </button>
-                                    </div>
+                                    @habit.Name
+                                    <span class="habit-category-label cat-@habit.Category.ToLower()">
+                                        @habit.CategoryLabel
+                                    </span>
                                 </td>
                                 @foreach (var day in weeklyDays)
                                 {
@@ -151,25 +129,6 @@
     private List<HeatmapDayInfo> heatmapDays = new();
     private List<WeeklyDayInfo> weeklyDays = new();
 
-
-    private async Task DeleteHabitAsync(Habit habit){
-        var confirmed = await JS.InvokeAsync<bool>(
-            "confirm",
-            $"Are you sure you want to delete \"{habit.Name}\"? This cannot be undone.");
-        if (!confirmed || currentUser == null)
-            {
-                return;
-            }
-        var habitToDelete = await DbContext.Habits.Include(h => h.Logs).FirstOrDefaultAsync(h => h.Id == habit.Id && h.UserId == currentUser.Id);
-        if (habitToDelete == null){
-            return;
-        }
-        DbContext.Habits.Remove(habitToDelete);
-        await DbContext.SaveChangesAsync();
-        habits.RemoveAll(h => h.Id == habit.Id);
-        await GenerateHeatmapDaysAsync();
-        StateHasChanged();
-    }
     protected override async Task OnInitializedAsync()
     {
         currentUser = await AuthService.GetCurrentUserAsync();
@@ -188,7 +147,10 @@
         if (currentUser == null) return;
 
         // Load user habits and logs
-        habits = await HabitService.GetUserHabitsWithLogsAsync();
+        habits = await DbContext.Habits
+            .Where(h => h.UserId == currentUser.Id)
+            .Include(h => h.Logs)
+            .ToListAsync();
 
         // Seed default habits if user has none
         if (habits.Count == 0)
@@ -206,7 +168,10 @@
             showSeedingAlert = true;
 
             // Reload habits
-            habits = await HabitService.GetUserHabitsWithLogsAsync();
+            habits = await DbContext.Habits
+                .Where(h => h.UserId == currentUser.Id)
+                .Include(h => h.Logs)
+                .ToListAsync();
         }
 
         // Initialize lists for grids
@@ -270,21 +235,8 @@
 
     private async Task ToggleLogAsync(Habit habit, DateOnly date)
     {
-        var today = DateOnly.FromDateTime(DateTime.Today);
-
-        if (date == today)
-        {
-            await HabitService.ToggleHabitCompletionAsync(habit.Id);
-
-            habits = await HabitService.GetUserHabitsWithLogsAsync();
-            await GenerateHeatmapDaysAsync();
-            StateHasChanged();
-            return;
-        }
-        if (currentUser == null) {
-            return;
-        }
-        var existingLog = await DbContext.HabitLogs.Where(log => log.HabitId == habit.Id && log.Date == date).FirstOrDefaultAsync();
+        var existingLog = habit.Logs.FirstOrDefault(l => l.Date == date);
+        HabitLog? addedLog = null;
 
         // Save old state for rollback
         var oldStreak = habit.Streak;
@@ -293,9 +245,7 @@
         // Optimistically apply local state changes
         if (existingLog != null)
         {
-            // Remove log
-            DbContext.HabitLogs.Remove(existingLog);
-            
+            habit.Logs.Remove(existingLog);
         }
         else
         {
@@ -305,31 +255,41 @@
                 Date = date,
                 IsCompleted = true
             };
-            await DbContext.HabitLogs.AddAsync(newLog);
-
-        }
-        // Save database changes
-        await DbContext.SaveChangesAsync();
-        habits = await HabitService.GetUserHabitsWithLogsAsync();
-        var updatedHabit = habits.FirstOrDefault(h => h.Id == habit.Id);
-
-        // update streaks
-        if (updatedHabit != null) {
-            updatedHabit.Streak = CalculateStreak(updatedHabit);
-            var trackedHabit = await DbContext.Habits.Where(h => h.Id == updatedHabit.Id && h.UserId == currentUser.Id).FirstOrDefaultAsync();
-            if (trackedHabit != null) {
-                trackedHabit.Streak = updatedHabit.Streak;
-                await DbContext.SaveChangesAsync();
-            }
+            habit.Logs.Add(addedLog);
         }
 
-        
-        habits = await HabitService.GetUserHabitsWithLogsAsync();
-
-        // Refresh stats
+        // Recalculate streak and regenerate heatmap immediately
+        habit.Streak = CalculateStreak(habit);
         await GenerateHeatmapDaysAsync();
+        StateHasChanged(); // Force immediate UI refresh
 
-        StateHasChanged();
+        try
+        {
+            // Now apply actual database context operations
+            if (existingLog != null)
+            {
+                DbContext.HabitLogs.Remove(existingLog);
+            }
+            else if (addedLog != null)
+            {
+                DbContext.HabitLogs.Add(addedLog);
+            }
+
+            // Save database changes
+            await DbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            // Rollback state on exception
+            habit.Streak = oldStreak;
+            habit.Logs = oldLogs;
+
+            // Re-render heatmap to old state
+            await GenerateHeatmapDaysAsync();
+            StateHasChanged();
+
+            Console.WriteLine($"Error saving habit log: {ex.Message}");
+        }
     }
 
     private int CalculateStreak(Habit habit)

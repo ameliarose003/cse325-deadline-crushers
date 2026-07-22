@@ -6,113 +6,45 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Momentum.Data;
 using Momentum.Models;
-using Microsoft.EntityFrameworkCore;
-using Momentum.Data;
-using Momentum.Components.Pages;
-
 
 namespace Momentum.Services;
 
 public class HabitService : IHabitService
 {
-    private readonly List<Habit> _habits = new();
-    private readonly List<WeekDay> _weekDays = new();
-    private readonly object _lock = new();
-    private readonly MomentumDbContext _dbContext;
+    private readonly MomentumDbContext _db;
     private readonly IAuthService _authService;
 
-    public HabitService(
-        MomentumDbContext dbContext,
-        IAuthService authService)
-        {
-            _dbContext = dbContext;
-            _authService = authService;
-
-            InitializeCalendar();
-        }
+    public HabitService(MomentumDbContext db, IAuthService authService)
+    {
+        _db = db;
+        _authService = authService;
+    }
 
     public async Task<List<Habit>> GetTodayHabitsAsync()
     {
-        var habits = await GetUserHabitsWithLogsAsync();
+        var user = await _authService.GetCurrentUserAsync();
+        if (user == null)
+        {
+            return new List<Habit>();
+        }
+
+        var habits = await _db.Habits
+            .Where(h => h.UserId == user.Id)
+            .Include(h => h.Logs)
+            .ToListAsync();
+
         var today = DateOnly.FromDateTime(DateTime.Today);
+
+        // Project/Map completion status for today
         foreach (var habit in habits)
         {
-            habit.IsCompleted = habit.Logs.Any(log => log.Date == today && log.IsCompleted);
-        }
-        
-        lock (_lock)
-        {
-            _habits.Clear();
-            _habits.AddRange(habits);
-            UpdateCalendarState();
+            habit.IsCompleted = habit.Logs.Any(l => l.Date == today && l.IsCompleted);
         }
 
         return habits;
     }
 
     public async Task ToggleHabitCompletionAsync(int habitId)
-    {
-        var today = DateOnly.FromDateTime(DateTime.Today);
-        var currentUser = await _authService.GetCurrentUserAsync();
-        if (currentUser == null)
-        {
-            throw new InvalidOperationException("User must log in");
-        }
-        var habit = await _dbContext.Habits.Include(h => h.Logs).FirstOrDefaultAsync(h => h.Id == habitId && h.UserId == currentUser.Id);
-        if (habit == null)
-        {
-            return;
-        }
-        var existingLog = habit.Logs.FirstOrDefault(log => log.Date == today && log.IsCompleted);
-        if (existingLog != null)
-        {
-            _dbContext.HabitLogs.Remove(existingLog);
-            habit.Logs.Remove(existingLog);
-        }
-        else
-        {
-            var newLog = new HabitLog
-            {
-                HabitId = habit.Id,
-                Date = today,
-                IsCompleted = true
-            };
-
-            _dbContext.HabitLogs.Add(newLog);
-            habit.Logs.Add(newLog);
-        }
-        habit.IsCompleted = existingLog == null;
-        habit.Streak = CalculateDatabaseStreak(habit);
-        habit.UpdatedAt = DateTime.Now;
-
-        await _dbContext.SaveChangesAsync();
-    }
-    private static int CalculateDatabaseStreak(Habit habit)
-{
-    var today = DateOnly.FromDateTime(DateTime.Today);
-
-    var completedDates = habit.Logs
-        .Where(log => log.IsCompleted)
-        .Select(log => log.Date)
-        .ToHashSet();
-
-    var startDate = completedDates.Contains(today)
-        ? today
-        : today.AddDays(-1);
-
-    var streak = 0;
-    var checkDate = startDate;
-
-    while (completedDates.Contains(checkDate))
-    {
-        streak++;
-        checkDate = checkDate.AddDays(-1);
-    }
-
-    return streak;
-}
-
-    public void ResetDailyHabits()
     {
         var habit = await _db.Habits
             .Include(h => h.Logs)
@@ -237,29 +169,25 @@ public class HabitService : IHabitService
         };
     }
 
-    public async Task AddNewHabitAsync(string name, string category)
+    public async Task ResetAllHabitsAsync()
     {
-        await PopulateNewHabits(name, category);
+        var user = await _authService.GetCurrentUserAsync();
+        if (user == null)
+        {
+            return;
+        }
+
+        var habits = await _db.Habits.Where(h => h.UserId == user.Id).ToListAsync();
+        _db.Habits.RemoveRange(habits);
+        await _db.SaveChangesAsync();
     }
 
-
-    private async Task PopulateNewHabits(string Name, string Category)
+    public async Task PopulateMockHabitsAsync()
     {
-        var currentUser = await _authService.GetCurrentUserAsync();
-        if (currentUser == null)
+        var user = await _authService.GetCurrentUserAsync();
+        if (user == null)
         {
-            throw new InvalidOperationException ("User must be logged in");
-        }
-        
-        var habit = new Habit  {UserId = currentUser.Id, Name = Name, IsCompleted = false, Streak = 0, Category = Category, CategoryLabel = Category.ToUpper()};
-
-        _dbContext.Habits.Add(habit);
-        await _dbContext.SaveChangesAsync();
-
-        lock (_lock)
-        {
-        _habits.Add(habit);
-        UpdateCalendarState();
+            return;
         }
 
         var userHabitsCount = await _db.Habits.CountAsync(h => h.UserId == user.Id);
@@ -322,20 +250,5 @@ public class HabitService : IHabitService
         }
 
         return streak;
-    }
-    public async Task<List<Habit>> GetUserHabitsWithLogsAsync()
-    {
-        var currentUser = await _authService.GetCurrentUserAsync();
-
-        if (currentUser == null)
-        {
-            return new List<Habit>();
-        }
-        return await _dbContext.Habits
-        .AsNoTracking()
-        .Where(habit => habit.UserId == currentUser.Id)
-        .Include(habit => habit.Logs)
-        .OrderBy(habit => habit.Id)
-        .ToListAsync();
     }
 }
