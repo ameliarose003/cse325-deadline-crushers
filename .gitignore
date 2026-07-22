@@ -36,3 +36,5 @@ Thumbs.db
 momentum.db
 momentum.db-shm
 momentum.db-wal
+
+.fake
