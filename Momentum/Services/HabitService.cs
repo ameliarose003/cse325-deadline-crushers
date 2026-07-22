@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using Momentum.Data;
+using Microsoft.Extensions.ObjectPool;
 using Momentum.Models;
 using Microsoft.EntityFrameworkCore;
 using Momentum.Data;
@@ -114,127 +109,68 @@ public class HabitService : IHabitService
 
     public void ResetDailyHabits()
     {
-        var habit = await _db.Habits
-            .Include(h => h.Logs)
-            .FirstOrDefaultAsync(h => h.Id == habitId);
-
-        if (habit == null)
+        foreach (var habit in _habits)
         {
-            return;
-        }
-
-        var today = DateOnly.FromDateTime(DateTime.Today);
-        var existingLog = habit.Logs.FirstOrDefault(l => l.Date == today);
-
-        if (existingLog != null)
-        {
-            _db.HabitLogs.Remove(existingLog);
-            habit.Logs.Remove(existingLog);
-        }
-        else
-        {
-            var newLog = new HabitLog
+            if (habit.UpdatedAt != DateTime.Now.Date)
             {
-                HabitId = habitId,
-                Date = today,
-                IsCompleted = true
+                habit.IsCompleted = false;
+            }
+            
+        }
+    }
+
+    public Task<List<WeekDay>> GetWeeklyCalendarAsync()
+    {
+        lock (_lock)
+        {
+            return Task.FromResult(_weekDays.Select(d => new WeekDay
+            {
+                Name = d.Name,
+                Abbreviation = d.Abbreviation,
+                IsCompleted = d.IsCompleted,
+                IsToday = d.IsToday
+            }).ToList());
+        }
+    }
+
+    public Task<OverviewStats> GetOverviewStatsAsync()
+    {
+        lock (_lock)
+        {
+            int total = _habits.Count;
+            int completed = _habits.Count(h => h.IsCompleted);
+            int rate = total == 0 ? 0 : (completed * 100) / total;
+            int streak = completed > 0 ? 5 : 4;
+
+            var stats = new OverviewStats
+            {
+                TotalCount = total,
+                CompletedCount = completed,
+                CompletionRate = rate,
+                CurrentStreak = streak,
+                LongestStreak = 12
             };
-            _db.HabitLogs.Add(newLog);
-            habit.Logs.Add(newLog);
+            return Task.FromResult(stats);
         }
-
-        // Recalculate streak
-        habit.Streak = CalculateStreak(habit);
-
-        await _db.SaveChangesAsync();
     }
 
-    public async Task<List<WeekDay>> GetWeeklyCalendarAsync()
+    public Task ResetAllHabitsAsync()
     {
-        var user = await _authService.GetCurrentUserAsync();
-        if (user == null)
+        lock (_lock)
         {
-            return new List<WeekDay>();
+            _habits.Clear();
+            UpdateCalendarState();
         }
-
-        var habits = await _db.Habits
-            .Where(h => h.UserId == user.Id)
-            .Include(h => h.Logs)
-            .ToListAsync();
-
-        var daysOfWeek = new[]
-        {
-            new { Name = "Monday", Abbr = "M" },
-            new { Name = "Tuesday", Abbr = "T" },
-            new { Name = "Wednesday", Abbr = "W" },
-            new { Name = "Thursday", Abbr = "T" },
-            new { Name = "Friday", Abbr = "F" },
-            new { Name = "Saturday", Abbr = "S" },
-            new { Name = "Sunday", Abbr = "S" }
-        };
-
-        var today = DateTime.Today;
-        var todayName = today.DayOfWeek.ToString();
-
-        // Calculate Monday's date of this week
-        int diff = (7 + (today.DayOfWeek - DayOfWeek.Monday)) % 7;
-        var mondayDate = today.AddDays(-1 * diff);
-
-        var result = new List<WeekDay>();
-        for (int i = 0; i < 7; i++)
-        {
-            var targetDate = mondayDate.AddDays(i);
-            var dateOnly = DateOnly.FromDateTime(targetDate);
-            var dayInfo = daysOfWeek[i];
-
-            // A weekday is marked completed if the user completed AT LEAST one habit on that day.
-            bool isCompleted = habits.Any(h => h.Logs.Any(l => l.Date == dateOnly && l.IsCompleted));
-
-            result.Add(new WeekDay
-            {
-                Name = dayInfo.Name,
-                Abbreviation = dayInfo.Abbr,
-                IsCompleted = isCompleted,
-                IsToday = dayInfo.Name == todayName
-            });
-        }
-
-        return result;
+        return Task.CompletedTask;
     }
 
-    public async Task<OverviewStats> GetOverviewStatsAsync()
+    public Task PopulateMockHabitsAsync()
     {
-        var user = await _authService.GetCurrentUserAsync();
-        if (user == null)
+        lock (_lock)
         {
-            return new OverviewStats();
+            PopulateDefaultHabits();
         }
-
-        var habits = await _db.Habits
-            .Where(h => h.UserId == user.Id)
-            .Include(h => h.Logs)
-            .ToListAsync();
-
-        int total = habits.Count;
-        var today = DateOnly.FromDateTime(DateTime.Today);
-        int completed = habits.Count(h => h.Logs.Any(l => l.Date == today && l.IsCompleted));
-        int rate = total == 0 ? 0 : (completed * 100) / total;
-
-        int currentStreak = habits.Count > 0 ? habits.Max(h => h.Streak) : 0;
-        int longestStreak = habits.Count > 0 ? habits.Max(h => h.Streak) : 0;
-        if (longestStreak < 12 && total > 0)
-        {
-            longestStreak = 12;
-        }
-
-        return new OverviewStats
-        {
-            TotalCount = total,
-            CompletedCount = completed,
-            CompletionRate = rate,
-            CurrentStreak = currentStreak,
-            LongestStreak = longestStreak
-        };
+        return Task.CompletedTask;
     }
 
     public async Task AddNewHabitAsync(string name, string category)
@@ -262,66 +198,57 @@ public class HabitService : IHabitService
         UpdateCalendarState();
         }
 
-        var userHabitsCount = await _db.Habits.CountAsync(h => h.UserId == user.Id);
-        if (userHabitsCount == 0)
-        {
-            var defaultHabits = new List<Habit>
-            {
-                new() { Name = "Read 10 pages of a book", Category = "mind", CategoryLabel = "Mind", UserId = user.Id },
-                new() { Name = "Drink 3 liters of water", Category = "health", CategoryLabel = "Health", UserId = user.Id },
-                new() { Name = "30-minute cardio workout", Category = "fitness", CategoryLabel = "Fitness", UserId = user.Id },
-                new() { Name = "Code on side project", Category = "work", CategoryLabel = "Work", UserId = user.Id },
-                new() { Name = "10-minute mindfulness meditation", Category = "mind", CategoryLabel = "Mind", UserId = user.Id }
-            };
-
-            await _db.Habits.AddRangeAsync(defaultHabits);
-            await _db.SaveChangesAsync();
-        }
     }
 
-    public async Task AddNewHabitAsync(string Name, string Category)
+    private void PopulateDefaultHabits()
     {
-        var user = await _authService.GetCurrentUserAsync();
-        if (user == null)
+        _habits.Clear();
+        _habits.AddRange(new List<Habit>
         {
-            return;
-        }
+            new() { Id = 1, Name = "Read 10 pages of a book", IsCompleted = true, Streak = 5, Category = "mind", CategoryLabel = "Mind", UpdatedAt = DateTime.Now.Date.AddDays(-1) },
+            new() { Id = 2, Name = "Drink 3 liters of water", IsCompleted = false, Streak = 2, Category = "health", CategoryLabel = "Health" },
+            new() { Id = 3, Name = "30-minute cardio workout", IsCompleted = true, Streak = 9, Category = "fitness", CategoryLabel = "Fitness" },
+            new() { Id = 4, Name = "Code on side project", IsCompleted = false, Streak = 4, Category = "work", CategoryLabel = "Work" },
+            new() { Id = 5, Name = "10-minute mindfulness meditation", IsCompleted = true, Streak = 1, Category = "mind", CategoryLabel = "Mind" }
+        });
+        UpdateCalendarState();
+    }
 
-        var newHabit = new Habit
+    private void InitializeCalendar()
+    {
+        var daysOfWeek = new[]
         {
-            Name = Name,
-            Category = Category.ToLower(),
-            CategoryLabel = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(Category),
-            UserId = user.Id,
-            IsCompleted = false,
-            Streak = 0
+            new { Name = "Monday", Abbr = "M" },
+            new { Name = "Tuesday", Abbr = "T" },
+            new { Name = "Wednesday", Abbr = "W" },
+            new { Name = "Thursday", Abbr = "T" },
+            new { Name = "Friday", Abbr = "F" },
+            new { Name = "Saturday", Abbr = "S" },
+            new { Name = "Sunday", Abbr = "S" }
         };
 
-        _db.Habits.Add(newHabit);
-        await _db.SaveChangesAsync();
+        var todayName = DateTime.Now.DayOfWeek.ToString();
+
+        _weekDays.Clear();
+        _weekDays.AddRange(daysOfWeek.Select(d => new WeekDay
+        {
+            Name = d.Name,
+            Abbreviation = d.Abbr,
+            IsCompleted = d.Name == "Monday" || d.Name == "Wednesday",
+            IsToday = d.Name == todayName
+        }).ToList());
+        
     }
 
-    private int CalculateStreak(Habit habit)
+    private void UpdateCalendarState()
     {
-        int streak = 0;
-        var today = DateOnly.FromDateTime(DateTime.Today);
-
-        bool completedToday = habit.Logs.Any(l => l.Date == today && l.IsCompleted);
-        bool completedYesterday = habit.Logs.Any(l => l.Date == today.AddDays(-1) && l.IsCompleted);
-
-        if (!completedToday && !completedYesterday)
+        var todayName = DateTime.Now.DayOfWeek.ToString();
+        var today = _weekDays.FirstOrDefault(d => d.Name == todayName);
+        if (today != null)
         {
-            return 0;
+            int completed = _habits.Count(h => h.IsCompleted);
+            today.IsCompleted = completed > 0;
         }
-
-        var checkDate = completedToday ? today : today.AddDays(-1);
-        while (habit.Logs.Any(l => l.Date == checkDate && l.IsCompleted))
-        {
-            streak++;
-            checkDate = checkDate.AddDays(-1);
-        }
-
-        return streak;
     }
     public async Task<List<Habit>> GetUserHabitsWithLogsAsync()
     {
